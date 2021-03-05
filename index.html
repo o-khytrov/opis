@@ -1,0 +1,149 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+
+  <title>Основи проектування інтелектуальних систем</title>
+  <meta name="description" content="Курсова Робота">
+  <meta name="author" content="O.Khytrov">
+
+  <link rel="stylesheet" href="styles.css?v=1.0">
+
+</head>
+<div id="matrix"></div>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"
+  integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+  integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+  integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+
+<body>
+  <div id="app">
+    <div class="container">
+      <h2>Основи проектування інтелектуальних систем</h2>
+
+      <ul class="nav nav-tabs nav-justified">
+        <li class="nav-item">
+          <a class="nav-link" @click.prevent="setActive('training')" :class="{ active: isActive('training') }"
+            href="#training">Traning</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" @click.prevent="setActive('exam')" :class="{ active: isActive('exam') }"
+            href="#exam">Exam</a>
+        </li>
+      </ul>
+      <div class="tab-content py-3" id="myTabContent">
+        <div class="tab-pane fade" :class="{ 'active show': isActive('training') }" id="training">
+          <div id="Training">
+
+
+            <p>Select matrix method:</p>
+
+            <div>
+              <input type="radio" id="m_avg" name="method" value="m_avg" checked v-model="method">
+              <label for="m_avg">Avg</label>
+            </div>
+
+            <div>
+              <input type="radio" id="m_red" name="method" value="m_red" v-model="method">
+              <label for="m_red">Red</label>
+            </div>
+
+            <div>
+              <input type="radio" id="m_green" name="method" value="m_green" v-model="method">
+              <label for="m_green">Green</label>
+            </div>
+            <div>
+              <input type="radio" id="m_blue" name="method" value="m_blue" v-model="method">
+              <label for="m_blue">Blue</label>
+            </div>
+
+            <div>
+              <input type="radio" id="m_lum" name="method" value="m_lum" v-model="method">
+              <label for="m_lum">Luminosity</label>
+            </div>
+
+            <div class="slidecontainer">
+              <label for="delta">Delta {{ delta }}</label>
+              <input type="range" min="0" max="150" class="slider" id="delta" v-model="delta">
+            </div>
+
+            <input type="file" id="btnAddImage" @change="addImage" multiple>
+
+            <button id="btnBuild" class="btn btn-primary" v-on:click="buildMatrix">Build matrix</button>
+            <button id="btnTrain" class="btn btn-primary" v-on:click="reverseMessage">Training</button>
+
+            <div id="container">
+              <div v-for="(item, index) in items">
+                <label class="label mt-2">{{item.name}}</label>
+                <table class="matrix">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th v-for="(cell,index) in item.matrix[0]">{{index+1}}</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row,rowIndex) in item.matrix">
+                      <th>{{rowIndex+1}}</th>
+                      <td v-for="(cell) in row">{{cell}}</td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <th>t</th>
+                      <td v-for="(t) in item.tolerance">{{t.top}}</td>
+                    </tr>
+                    <tr>
+                      <th>c</th>
+                      <th class="highlight" v-for="(c) in item.center">{{c}}</th>
+                    </tr>
+                    <tr>
+                      <th>b</th>
+                      <td v-for="(t) in item.tolerance">{{t.bottom}}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+                <p>Binary matrix</p>
+
+                <table class="matrix">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th v-for="(cell,index) in item.binMatrix[0]">{{index+1}}</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row,rowIndex) in item.binMatrix">
+                      <th>{{rowIndex+1}}</th>
+                      <td v-for="(cell) in row">{{cell}}</td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+
+                    <tr class="etalon">
+                      <th>e</th>
+                      <td v-for="(e) in item.etalon">{{e}}</td>
+                    </tr>
+
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-pane fade" :class="{ 'active show': isActive('exam') }" id="exam">
+          <button class="btn btn-primary mb-3" v-on:click="exam">Run exam</button>
+
+        </div>
+      </div>
+    </div>
+  </div>
+  <script type="text/javascript" src="script.js"></script>
+</body>
+
+</html>
