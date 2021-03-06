@@ -96,7 +96,7 @@ function buildMatrix(c, method) {
 class item {
 
     constructor() {
-        this.name ='';
+        this.name = '';
         this.matrix = new Array();  //матриця зображення   
         this.center = new Array();  //центр контейнера класу розпізнавання
         this.tolerance = new Array();  //массив структур tollerance, (нижня і верхня межа допуску)
@@ -146,18 +146,18 @@ var app = new Vue({
         delta: 20,
         items: []
     },
-    mounted:function(){
+    mounted: function () {
         var image = new Image();
         image.src = "./Map.png";
-        image.onload = function(){
+        image.onload = function () {
             console.log("image loaded");
             var canvas = document.createElement('canvas');
             canvas.setAttribute("id", "ExamCanvas");
             canvas.height = this.height;
             canvas.width = this.width;
-            var ctx    = canvas.getContext('2d');
+            var ctx = canvas.getContext('2d');
             document.getElementById('exam').appendChild(canvas);
-            ctx.drawImage( this, 0, 0, this.width, this.height );
+            ctx.drawImage(this, 0, 0, this.width, this.height);
         }
 
     },
@@ -185,7 +185,7 @@ var app = new Vue({
             if (event.target.files.length > 0) {
                 for (var i = 0; i < event.target.files.length; i++) {
                     var fr = new FileReader();
-                    fr.fileName = event.target.files[i].name; 
+                    fr.fileName = event.target.files[i].name;
 
                     fr.onload = function (e) {
 
@@ -215,17 +215,23 @@ var app = new Vue({
             var examMatrix = buildMatrix(canvas, this.method);
             var ctx = canvas.getContext("2d");
             var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-           
-            for(var x = 0;x<canvas.width;x+=50)
-               for(var y= 0; y<canvas.height;y++)
-                imageData.setPixel(x,y,{R:255,G:0,B:0});
 
-            for(var y = 0;y<canvas.height;y+=50)
-                for(var x= 0; x<canvas.width;x++)
-                 imageData.setPixel(x,y,{R:255,G:0,B:0});
-           
-           ctx.putImageData(imageData, 0, 0);
-           runExam(examMatrix,this.items)
+            for (var x = 0; x < canvas.width; x += 50)
+                for (var y = 0; y < canvas.height; y++)
+                    imageData.setPixel(x, y, { R: 255, G: 0, B: 0 });
+
+            for (var y = 0; y < canvas.height; y += 50)
+                for (var x = 0; x < canvas.width; x++)
+                    imageData.setPixel(x, y, { R: 255, G: 0, B: 0 });
+
+            highlightArea(imageData, 0, 0, 50, 'yellow', 100);
+
+
+
+
+
+            ctx.putImageData(imageData, 0, 0);
+            runExam(examMatrix, this.items)
 
         },
         isActive(menuItem) {
@@ -237,40 +243,58 @@ var app = new Vue({
     }
 })
 
-function getAreaItem(matrix){
+function highlightArea(imageData, startX, startY, d, color, intensity) {
+    const endY = startY + d;
+    const endX = startX + d;
+    for (y = startY; y < endY; y++)
+        for (x = startX; x < endX; x++) {
+            var pixel = imageData.getPixel(x, y);
+            switch (color) {
+                case 'green':
+                    pixel.G = Math.min(255, pixel.G + intensity);
+                    break;
+                case 'blue':
+                    pixel.B = Math.min(255, pixel.B + intensity);
+                        break;
+                case 'yellow':
+                    pixel.R = Math.min(255, pixel.R + intensity);
+                    pixel.G = Math.min(255, pixel.G + intensity);
+                    break;
+                default:
+                    break;
+            }
+
+            imageData.setPixel(x, y, pixel);
+        }
+}
+function getAreaItem(matrix) {
     var startX = 0;
     var endX = 50;
     var startY = 0;
     var endY = 50;
     var exItem = new item();
 
-    for(var x = startX;x<endX;x++)
-    {
+    for (var x = startX; x < endX; x++) {
         exItem.matrix.push(new Array());
-        for(var y = startY;y<endY;y++)
-        {
+        for (var y = startY; y < endY; y++) {
             exItem.matrix[x].push(matrix[x][y]);
 
         }
     }
-  
+
     exItem.calculateCenter(+app.delta);
     exItem.buildBinaryMatrix();
-    
-  return exItem;
+
+    return exItem;
 
 }
-function runExam (examMatrix, items)
-{
+function runExam(examMatrix, items) {
     var exItem = getAreaItem(examMatrix);
     console.log(exItem.etalon);
-    for(var i = 0; i < items.length; i++)
-    {
-        var distance = hemmingDistance(exItem.etalon,items[i].etalon);
+    for (var i = 0; i < items.length; i++) {
+        var distance = hemmingDistance(exItem.etalon, items[i].etalon);
         console.log(items[i].etalon);
         console.log(items[i].name);
         console.log(distance);
     }
-   
-
 }

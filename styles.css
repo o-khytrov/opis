@@ -25,3 +25,7 @@ table.matrix, th, td {
 .etalon{
     background-color: springgreen;
 }
+#ExamCanvas{
+    position: relative;
+    left: -350px;
+}
