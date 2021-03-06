@@ -8,7 +8,7 @@
   <title>Основи проектування інтелектуальних систем</title>
   <meta name="description" content="Курсова Робота">
   <meta name="author" content="O.Khytrov">
-  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="/favicon.ico?v=2" type="image/x-icon">
   <link rel="stylesheet" href="styles.css?v=1.0">
 </head>
 <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
@@ -74,7 +74,16 @@
 
             <div id="container">
               <div v-for="(item, index) in items">
-                <label class="label mt-2">{{item.name}}</label>
+                <div class="label mt-2">{{item.name}};</div>
+                <div v-if="item.neighbour>=0">neighbour: {{items[item.neighbour].name}} distance to neighbour: {{item.distanceToNeighbour}}</div>
+                <div>radius: {{item.radius}}</div>
+                <div>no_rab_obl_Radius: {{item.no_rab_obl_Radius}}</div>
+                <div>no_rab_obl_dostovirn_D1: {{item.no_rab_obl_dostovirn_D1}}</div>
+                <div>no_rab_pomylka_betta: {{item.no_rab_pomylka_betta}}</div>
+                <div>pomylka_betta: {{item.pomylka_betta}}</div>
+                <div>maxKFE: {{item.maxKFE}}</div>
+                <div>dostovirn_D1: {{item.dostovirn_D1}}</div>
+
                 <table class="matrix">
                   <thead>
                     <tr>
@@ -131,6 +140,7 @@
         </div>
         <div class="tab-pane fade" :class="{ 'active show': isActive('exam') }" id="exam">
           <button class="btn btn-primary mb-3" v-on:click="exam" :disabled="!trainingComlete">Run exam</button>
+          <button class="btn btn-danger mb-3" v-on:click="reset" :disabled="!trainingComlete">Reset exam</button>
 
         </div>
       </div>
