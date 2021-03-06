@@ -9,23 +9,18 @@ function train() {
     for (var tolerance = 0; tolerance <= maxTolerance; tolerance++) {
         for (var i = 0; i < TrainingSet.length; i++) {
             var matrix = TrainingSet[i]
-
         }
-
     }
-
 }
 
 
 ImageData.prototype.getPixel = function (x, y) {
-
     var i = (x + y * this.width) * 4;
     return {
         R: this.data[i],
         G: this.data[i + 1],
         B: this.data[i + 2],
         A: this.data[i + 3]
-
     }
 }
 
@@ -74,7 +69,6 @@ function buildMatrix(c, method) {
         matrix.push(new Array());
         for (var x = 0; x < c.width; x++) {
             var pixel = imageData.getPixel(x, y);
-
             if (method == 'm_avg')
                 matrix[y].push(avg(pixel))
             else if (method == 'm_red')
@@ -86,12 +80,10 @@ function buildMatrix(c, method) {
             else if (method == 'm_lum')
                 matrix[y].push(luminosity(pixel));
         }
-
-
     }
     return matrix;
-
 }
+
 //класс розпізнавання
 class item {
 
@@ -141,30 +133,16 @@ class item {
 var app = new Vue({
     el: '#app',
     data: {
-        activeItem: 'training',
-        method: 'm_avg',
-        delta: 20,
-        items: []
+        activeItem: 'training', // закладка
+        method: 'm_avg',        // алгоритм побудови матриці зображення
+        delta: 20,              // початкове значення Delta
+        items: [],              // массив класів розпізнавання
+        trainingComlete:false   // тренування завершене, система готова до екзамену
     },
     mounted: function () {
-        var image = new Image();
-        image.src = "./Map.png";
-        image.onload = function () {
-            console.log("image loaded");
-            var canvas = document.createElement('canvas');
-            canvas.setAttribute("id", "ExamCanvas");
-            canvas.height = this.height;
-            canvas.width = this.width;
-            var ctx = canvas.getContext('2d');
-            document.getElementById('exam').appendChild(canvas);
-            ctx.drawImage(this, 0, 0, this.width, this.height);
-        }
-
+        loadExamImage();
     },
     methods: {
-        reverseMessage: function () {
-            this.message = this.message.split('').reverse().join('')
-        },
         buildMatrix: function () {
             this.items = [];
             var canvases = this.$el.querySelectorAll('canvas.training');
@@ -176,9 +154,8 @@ var app = new Vue({
                 i.calculateCenter(+this.delta);
                 i.buildBinaryMatrix();
                 this.items.push(i);
-
             }
-
+            this.trainingComlete = true;
         },
         addImage: function (event) {
 
@@ -188,10 +165,8 @@ var app = new Vue({
                     fr.fileName = event.target.files[i].name;
 
                     fr.onload = function (e) {
-
                         var img = new Image();
                         img.onload = function () {
-
                             w = Math.round(this.width),
                                 h = Math.round(this.height),
                                 c = document.createElement("canvas");
@@ -201,8 +176,6 @@ var app = new Vue({
                             document.getElementById('container').appendChild(c);
                             var context = c.getContext("2d");
                             context.drawImage(this, 0, 0, w, h);
-
-
                         }
                         img.src = fr.result;
                     }
@@ -225,11 +198,6 @@ var app = new Vue({
                     imageData.setPixel(x, y, { R: 255, G: 0, B: 0 });
 
             highlightArea(imageData, 0, 0, 50, 'yellow', 100);
-
-
-
-
-
             ctx.putImageData(imageData, 0, 0);
             runExam(examMatrix, this.items)
 
@@ -242,6 +210,21 @@ var app = new Vue({
         }
     }
 })
+
+function loadExamImage() {
+    var image = new Image();
+    image.src = "./Map.png";
+    image.onload = function () {
+        console.log("image loaded");
+        var canvas = document.createElement('canvas');
+        canvas.setAttribute("id", "ExamCanvas");
+        canvas.height = this.height;
+        canvas.width = this.width;
+        var ctx = canvas.getContext('2d');
+        document.getElementById('exam').appendChild(canvas);
+        ctx.drawImage(this, 0, 0, this.width, this.height);
+    };
+}
 
 function highlightArea(imageData, startX, startY, d, color, intensity) {
     const endY = startY + d;

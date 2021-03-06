@@ -8,18 +8,13 @@
   <title>Основи проектування інтелектуальних систем</title>
   <meta name="description" content="Курсова Робота">
   <meta name="author" content="O.Khytrov">
-
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="styles.css?v=1.0">
-
 </head>
-<div id="matrix"></div>
 <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"
-  integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
-  integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
-  integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
 
 <body>
   <div id="app">
@@ -75,7 +70,7 @@
             <input type="file" id="btnAddImage" @change="addImage" multiple>
 
             <button id="btnBuild" class="btn btn-primary" v-on:click="buildMatrix">Build matrix</button>
-            <button id="btnTrain" class="btn btn-primary" v-on:click="reverseMessage">Training</button>
+            <button id="btnTrain" class="btn btn-primary">Training</button>
 
             <div id="container">
               <div v-for="(item, index) in items">
@@ -124,12 +119,10 @@
                     </tr>
                   </tbody>
                   <tfoot>
-
                     <tr class="etalon">
                       <th>e</th>
                       <td v-for="(e) in item.etalon">{{e}}</td>
                     </tr>
-
                   </tfoot>
                 </table>
               </div>
@@ -137,7 +130,7 @@
           </div>
         </div>
         <div class="tab-pane fade" :class="{ 'active show': isActive('exam') }" id="exam">
-          <button class="btn btn-primary mb-3" v-on:click="exam">Run exam</button>
+          <button class="btn btn-primary mb-3" v-on:click="exam" :disabled="!trainingComlete">Run exam</button>
 
         </div>
       </div>
