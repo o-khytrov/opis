@@ -25,7 +25,26 @@ table.matrix, th, td {
 .etalon{
     background-color: springgreen;
 }
-#ExamCanvas{
-    position: relative;
-    left: -350px;
+
+canvas {
+  cursor: crosshair;
+  border: 1px solid #000000;
+}
+#overlay, #source {
+ margin-left: 15px;
+ position: absolute;
+ left: 0;
+}
+
+.training
+{
+    display: block;
+    margin-bottom: 3px;
+}
+.item-name{
+    margin-bottom: 3px;
+}
+.item-name input{
+    height: 50%;
+    margin: auto;
 }

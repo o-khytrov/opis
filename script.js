@@ -54,6 +54,7 @@ function luminosity(pixel) {
     return Math.round(0.21 * pixel.R + 0.72 * pixel.G + 0.07 * pixel.B);
 }
 
+//структура для зберігання меж допусків
 class tolerance {
 
     constructor(top, bottom) {
@@ -61,6 +62,7 @@ class tolerance {
         this.bottom = bottom;
     }
 }
+
 function buildMatrix(c, method) {
     var context = c.getContext('2d');
     var imageData = context.getImageData(0, 0, c.width, c.height);
@@ -84,62 +86,7 @@ function buildMatrix(c, method) {
     return matrix;
 }
 
-//класс розпізнавання
-class item {
 
-    constructor() {
-        this.name = '';
-        this.matrix = new Array();      //матриця зображення   
-        this.center = new Array();      //центр контейнера класу розпізнавання
-        this.tolerance = new Array();   //массив структур tollerance, (нижня і верхня межа допуску)
-        this.binMatrix = new Array();   //бінатрна матриця
-        this.etalon = new Array();      //еталонний вектор класу
-        this.neighbour = -1;            //індекс класу сусіда
-        this.distanceToNeighbour = 0;   //відстань до сусіда
-        this.maxKFE = -1;
-        this.no_rab_obl_max_KFE = -1;
-        //this.kodova_vidstan = new Array();
-        this.radius = 0;
-        this.no_rab_obl_Radius = 0;
-        this.no_rab_obl_dostovirn_D1 = 0;
-        this.no_rab_pomylka_betta = 0;
-        this.dostovirn_D1 = 0;
-    }
-    // визначення еталонного вектору
-    calculateCenter = function (delta) {
-
-        let colNumber = this.matrix[0].length;
-        for (var col = 0; col < colNumber; col++) {
-            var sum = 0;
-            for (var row = 0; row < this.matrix.length; row++) {
-                var val = this.matrix[row][col];
-                sum += val;
-            }
-            var avg = Math.round(sum / this.matrix.length);
-            this.center.push(avg);
-            this.tolerance.push(new tolerance(avg + delta, avg - delta));
-        }
-    }
-    // побудова бінарної матриці
-    buildBinaryMatrix = function () {
-        for (var r = 0; r < this.matrix.length; r++) {
-            this.binMatrix.push(new Array());
-            for (var c = 0; c < this.matrix[r].length; c++) {
-                var tolerance = this.tolerance[c];
-                this.binMatrix[r][c] = (this.matrix[r][c] >= tolerance.bottom && this.matrix[r][c] <= tolerance.top) ? 1 : 0;
-            }
-        }
-        var colNumber = this.binMatrix[0].length;
-        for (var c = 0; c < colNumber; c++) {
-            var sum = 0;
-            for (var r = 0; r < this.binMatrix.length; r++)
-                sum += this.binMatrix[r][c];
-
-            this.etalon.push((sum / this.binMatrix.length) >= 0.5 ? 1 : 0);
-        }
-        this.distanceToNeighbour = this.etalon.length;
-    }
-}
 
 //Критерій Кульбака
 function KFE(kodova_vidstan, c) {
@@ -218,38 +165,124 @@ function caclulateDistanceToNeighbours(items) {
     }
 }
 
+function setupOverlay(width, height) {
+    //Canvas
+    const canvas = document.createElement('canvas');
+    canvas.setAttribute("id", "overlay");
+    canvas.setAttribute("width", width);
+    canvas.setAttribute("height", height);
+    document.getElementById('map-container').appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    //Variables
+    let last_mousex = -1;
+    let last_mousey = -1;
+    let mousex = -1;
+    let mousey = -1;
+    let mousedown = false;
+
+    //Mousedowjn
+    canvas.onmousedown = (ev) => {
+        let canvasx = ev.target.offsetLeft;
+        let canvasy = ev.target.offsetTop;
+
+        var clientX = ev.clientX;
+        var clientY = ev.clientY;
+
+        last_mousex = parseInt(clientX - canvasx);
+        last_mousey = parseInt(clientY - canvasy);
+        console.log({ last_mousex, last_mousey });
+        mousedown = true;
+    };
+
+    //Mouseup
+    canvas.onmouseup = (ev) => {
+
+        var size = app.blockSize;
+        var sourceCanvas = document.getElementById('source');
+        var sourceContext = sourceCanvas.getContext("2d");
+
+        let canvasx = ev.target.offsetLeft;
+        let canvasy = ev.target.offsetTop;
+        var clientX = ev.pageX;
+        var clientY = ev.pageY;
+        mousex = parseInt(clientX - canvasx);
+        mousey = parseInt(clientY - canvasy);
+
+        var sourceCanvas = document.getElementById('source');
+        var sourceContext = sourceCanvas.getContext("2d");
+        var sourceImageData = sourceContext.getImageData(mousex - size / 2, mousey - size / 2, size, size);
+
+        var c = document.createElement("canvas");
+        c.className = "training";
+        c.width = app.blockSize;
+        c.height = app.blockSize;
+
+        var context = c.getContext("2d");
+        context.putImageData(sourceImageData, 0, 0);
+        document.getElementById('training-set').appendChild(c);
+
+        var preview = document.createElement("canvas");
+        preview.className = "preview";
+        preview.width = app.blockSize;
+        preview.height = app.blockSize;
+
+        var previewContext = preview.getContext("2d");
+        previewContext.putImageData(sourceImageData, 0, 0);
+        document.getElementById('preview').appendChild(preview);
+        app.items.push(new item());
+
+    }
+
+    //Mousemove
+    canvas.onmousemove = (ev) => {
+
+        let canvasx = ev.target.offsetLeft;
+        let canvasy = ev.target.offsetTop;
+        var clientX = ev.pageX;
+        var clientY = ev.pageY;
+
+        mousex = parseInt(clientX - canvasx);
+        mousey = parseInt(clientY - canvasy);
+        var size = app.blockSize;
+        ctx.clearRect(-1, 0, canvas.width, canvas.height); //clear canvas
+        ctx.beginPath();
+        ctx.rect(mousex - size / 2, mousey - size / 2, size, size);
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+    };
+
+}
+
 //Інтерфейс програми
 var app = new Vue({
     el: '#app',
     data: {
-        activeItem: 'training', // закладка
+        activeItem: 'setup', // закладка
         method: 'm_avg',        // алгоритм побудови матриці зображення
         delta: 10,              // початкове значення Delta
         items: [],              // массив класів розпізнавання
         trainingComlete: false, // тренування завершене, система готова до екзамену
-    },
-    mounted: function () {
-        loadExamImage();
+        blockSize: 50
     },
     methods: {
         buildMatrix: function () {
-            this.items = [];
             var canvases = this.$el.querySelectorAll('canvas.training');
             for (var canv = 0; canv < canvases.length; canv++) {
                 var c = canvases[canv];
-                var i = new item();
-                i.name = c.getAttribute('name');
+                var i = this.items[canv];
+                i.reset();
                 i.matrix = buildMatrix(c, this.method);
                 i.calculateCenter(+this.delta);
                 i.buildBinaryMatrix();
-                this.items.push(i);
             }
             caclulateDistanceToNeighbours(this.items);
             calculateRadius(this.items);
             this.trainingComlete = true;
         },
-        addImage: function (event) {
-
+        addMap: function (event) {
+            console.log(event.target)
             if (event.target.files.length > 0) {
                 for (var i = 0; i < event.target.files.length; i++) {
                     var fr = new FileReader();
@@ -258,15 +291,16 @@ var app = new Vue({
                     fr.onload = function (e) {
                         var img = new Image();
                         img.onload = function () {
-                            w = Math.round(this.width),
-                                h = Math.round(this.height),
-                                c = document.createElement("canvas");
-                            c.className = "training";
-                            c.setAttribute("name", fr.fileName);
-                            c.width = w; c.height = h;
-                            document.getElementById('container').appendChild(c);
-                            var context = c.getContext("2d");
-                            context.drawImage(this, 0, 0, w, h);
+
+                            var c = document.getElementById('source');
+                            var w = Math.round(this.width / app.blockSize) * app.blockSize;
+                            var h = Math.round(this.height / app.blockSize) * app.blockSize;
+                            c.width = w;
+                            c.height = h;
+                            var ctx = c.getContext("2d");
+                            ctx.drawImage(this, 0, 0, w, h);
+                            setupOverlay(w, h);
+                            initExamCanvas();
                         }
                         img.src = fr.result;
                     }
@@ -283,7 +317,7 @@ var app = new Vue({
         setActive(menuItem) {
             this.activeItem = menuItem
         },
-        reset:function(){
+        reset: function () {
             resetExam()
         }
     }
@@ -294,7 +328,7 @@ function fullExam(items, method) {
     var examMatrix = buildMatrix(canvas, method);
     var ctx = canvas.getContext("2d");
     var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    var step = 50;
+    var step = +app.blockSize;
 
     for (var x = 0; x < canvas.width; x += step)
         for (var y = 0; y < canvas.height; y++)
@@ -306,35 +340,32 @@ function fullExam(items, method) {
 
     for (var r = 0; r < canvas.height; r += step)
         for (var c = 0; c < canvas.width; c += step) {
-            console.log();
             var testArea = getAreaItem(examMatrix, r, c, step);
             var testResult = ExamArea(testArea, items);
-            var color = 'yellow';
-            if(testResult!=-1)
-            color = colors[testResult];
+            var color = 'red';
+            if (testResult != -1)
+                color = testResult;
             highlightArea(imageData, r, c, step, color, 100);
         }
 
     ctx.putImageData(imageData, 0, 0);
 }
-function resetExam (){
+function resetExam() {
     document.getElementById("ExamCanvas").outerHTML = "";
-    loadExamImage();
+    initExamCanvas();
 }
-function loadExamImage() {
-    var image = new Image();
-    image.src = "./Map.png";
-    image.onload = function () {
-        var canvas = document.createElement('canvas');
-        canvas.setAttribute("id", "ExamCanvas");
-        var height = Math.round(this.height / 50) * 50;
-        var width = Math.round(this.width / 50) * 50;
-        canvas.height = height;
-        canvas.width = width;
-        var ctx = canvas.getContext('2d');
-        document.getElementById('exam').appendChild(canvas);
-        ctx.drawImage(this, 0, 0, width, height);
-    };
+
+function initExamCanvas() {
+    var sourceCanvas = document.getElementById('source');
+    var sourceImageData = sourceCanvas.getContext("2d").getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+
+    var examCanvas = document.createElement('canvas');
+    examCanvas.setAttribute("id", "ExamCanvas");
+    examCanvas.width = sourceCanvas.width;
+    examCanvas.height = sourceCanvas.height;
+    var examCtx = examCanvas.getContext('2d');
+    examCtx.putImageData(sourceImageData, 0, 0);
+    document.getElementById('exam').appendChild(examCanvas);
 }
 
 //підсвітка ділянки зображення
@@ -386,12 +417,17 @@ function getAreaItem(matrix, startRow, startCol, distance) {
 //Екзамен
 function ExamArea(exItem, items) {
     var maxf = -1;
+
+    var retVal = '';
+    var maxDistanse = 50; //TODO
+
     for (var i = 0; i < items.length; i++) {
         var rclas = items[i];
         var distance = hemmingDistance(exItem.etalon, rclas.etalon);
         console.log(`distance to ${rclas.name}: ${distance}`);
         var result = 1 - distance / rclas.radius;
         console.log(`result: ${result}`);
+        /*
         if (maxf < result && result >= 0) {
             console.log(`this is ${rclas.name}`);
             maxf = result;
@@ -401,6 +437,12 @@ function ExamArea(exItem, items) {
             //console.log(`this is not ${rclas.name}`);
             return -1;
         }
+        */
+        if (distance < maxDistanse) {
+            retVal = rclas.highlightColor;
+            maxDistanse = distance;
+        }
+
     }
+    return retVal;
 }
-var colors = { "forest.png": "green", "water.png": "blue", "field.png": "yellow" }

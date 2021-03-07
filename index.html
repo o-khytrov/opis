@@ -12,16 +12,23 @@
   <link rel="stylesheet" href="styles.css?v=1.0">
 </head>
 <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"
+  integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+  integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+  integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
 
 <body>
   <div id="app">
-    <div class="container">
+    <div class="container-fluid">
       <h2>Основи проектування інтелектуальних систем</h2>
-
+      <h6>O.Khytrov INmz-01s</h6>
       <ul class="nav nav-tabs nav-justified">
+        <li class="nav-item">
+          <a class="nav-link" @click.prevent="setActive('setup')" :class="{ active: isActive('setup')}"
+            href="#setup">Setup</a>
+        </li>
         <li class="nav-item">
           <a class="nav-link" @click.prevent="setActive('training')" :class="{ active: isActive('training') }"
             href="#training">Traning</a>
@@ -32,50 +39,77 @@
         </li>
       </ul>
       <div class="tab-content py-3" id="myTabContent">
+        <div class="tab-pane fade" :class="{ 'active show': isActive('setup')}" id="setup">
+          <div class="slidecontainer">
+            <label for="delta">Block size {{ blockSize }}</label>
+            <input type="range" min="0" max="150" class="slider" id="blockSize" v-model="blockSize">
+          </div>
+          <input class="mb-2" type="file" id="addMap" @change="addMap">
+          <div id="preview">
+          </div>
+          <div id="map-container">
+            <canvas id="source"></canvas>
+          </div>
+        </div>
         <div class="tab-pane fade" :class="{ 'active show': isActive('training') }" id="training">
           <div id="Training">
+            <div class="row">
+              <div class="col-1">
+                <div id="training-set">
+                </div>
+              </div>
+              <div class="col-2">
+                <div class="item-name" v-for="(item,index) in items" v-bind:style="{ height: (blockSize+2) + 'px' }">
+                 <input type="text" v-model="items[index].name"> 
+                </div>
+              </div>
+               <div class="col-2">
+                <div class="item-name" v-for="(item,index) in items" v-bind:style="{ height: (blockSize+2) + 'px' }">
+                 <select type="text" v-model="items[index].highlightColor">
+                   <option value="green">green</option>
+                   <option value="blue">blue</option>
+                   <option value="yellow">yelllow</option>
+                 </select>
+                </div>
+              </div>
+              <div class="col-6">
+                <p>Select matrix method:</p>
+                <div>
+                  <input type="radio" id="m_avg" name="method" value="m_avg" checked v-model="method">
+                  <label for="m_avg">Avg</label>
+                </div>
+                <div>
+                  <input type="radio" id="m_red" name="method" value="m_red" v-model="method">
+                  <label for="m_red">Red</label>
+                </div>
+                <div>
+                  <input type="radio" id="m_green" name="method" value="m_green" v-model="method">
+                  <label for="m_green">Green</label>
+                </div>
+                <div>
+                  <input type="radio" id="m_blue" name="method" value="m_blue" v-model="method">
+                  <label for="m_blue">Blue</label>
+                </div>
 
+                <div>
+                  <input type="radio" id="m_lum" name="method" value="m_lum" v-model="method">
+                  <label for="m_lum">Luminosity</label>
+                </div>
 
-            <p>Select matrix method:</p>
-
-            <div>
-              <input type="radio" id="m_avg" name="method" value="m_avg" checked v-model="method">
-              <label for="m_avg">Avg</label>
+                <div class="slidecontainer">
+                  <label for="delta">Delta {{ delta }}</label>
+                  <input type="range" min="-1" max="150" class="slider" id="delta" v-model="delta">
+                </div>
+              </div>
             </div>
-
-            <div>
-              <input type="radio" id="m_red" name="method" value="m_red" v-model="method">
-              <label for="m_red">Red</label>
-            </div>
-
-            <div>
-              <input type="radio" id="m_green" name="method" value="m_green" v-model="method">
-              <label for="m_green">Green</label>
-            </div>
-            <div>
-              <input type="radio" id="m_blue" name="method" value="m_blue" v-model="method">
-              <label for="m_blue">Blue</label>
-            </div>
-
-            <div>
-              <input type="radio" id="m_lum" name="method" value="m_lum" v-model="method">
-              <label for="m_lum">Luminosity</label>
-            </div>
-
-            <div class="slidecontainer">
-              <label for="delta">Delta {{ delta }}</label>
-              <input type="range" min="0" max="150" class="slider" id="delta" v-model="delta">
-            </div>
-
-            <input type="file" id="btnAddImage" @change="addImage" multiple>
-
             <button id="btnBuild" class="btn btn-primary" v-on:click="buildMatrix">Build matrix</button>
             <button id="btnTrain" class="btn btn-primary">Training</button>
 
-            <div id="container">
+            <div v-if="trainingComlete" id="container">
               <div v-for="(item, index) in items">
                 <div class="label mt-2">{{item.name}};</div>
-                <div v-if="item.neighbour>=0">neighbour: {{items[item.neighbour].name}} distance to neighbour: {{item.distanceToNeighbour}}</div>
+                <div v-if="item.neighbour>=0">neighbour: {{items[item.neighbour].name}} distance to neighbour:
+                  {{item.distanceToNeighbour}}</div>
                 <div>radius: {{item.radius}}</div>
                 <div>no_rab_obl_Radius: {{item.no_rab_obl_Radius}}</div>
                 <div>no_rab_obl_dostovirn_D1: {{item.no_rab_obl_dostovirn_D1}}</div>
@@ -146,6 +180,7 @@
       </div>
     </div>
   </div>
+  <script type="text/javascript" src="item.js"></script>
   <script type="text/javascript" src="script.js"></script>
 </body>
 
