@@ -1,19 +1,4 @@
-var imageWidth = 50;
-var imageHeight = 50;
-var maxTolerance = 150;
-var TrainingSet = [];
-var ToleranceTop = [];
-var ToleranceBottom = [];
-
-function train() {
-    for (var tolerance = 0; tolerance <= maxTolerance; tolerance++) {
-        for (var i = 0; i < TrainingSet.length; i++) {
-            var matrix = TrainingSet[i]
-        }
-    }
-}
-
-
+//отримання пікселя по за координатами
 ImageData.prototype.getPixel = function (x, y) {
     var i = (x + y * this.width) * 4;
     return {
@@ -24,6 +9,7 @@ ImageData.prototype.getPixel = function (x, y) {
     }
 }
 
+//втановлення піксеня за координатами
 ImageData.prototype.setPixel = function (x, y, c) {
     var i = (x + y * this.width) * 4;
     this.data[i] = c.R;
@@ -165,6 +151,7 @@ function caclulateDistanceToNeighbours(items) {
     }
 }
 
+//вибір зображення для класу розпізнавання
 function setupOverlay(width, height) {
     //Canvas
     const canvas = document.createElement('canvas');
@@ -355,6 +342,7 @@ function resetExam() {
     initExamCanvas();
 }
 
+//ініціалізація зображення, на якому проводиться екзамен
 function initExamCanvas() {
     var sourceCanvas = document.getElementById('source');
     var sourceImageData = sourceCanvas.getContext("2d").getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
@@ -395,9 +383,8 @@ function highlightArea(imageData, startY, startX, d, color, intensity) {
             imageData.setPixel(x, y, pixel);
         }
 }
-
+//вибір кадру для екзамену
 function getAreaItem(matrix, startRow, startCol, distance) {
-    console.log(`getting test area ${startRow} ${startCol}`);
     var endRow = startRow + distance;
     var endCol = startCol + distance;
     var exItem = new item();
