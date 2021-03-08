@@ -60,16 +60,16 @@
               </div>
               <div class="col-2">
                 <div class="item-name" v-for="(item,index) in items" v-bind:style="{ height: (blockSize+2) + 'px' }">
-                 <input type="text" v-model="items[index].name"> 
+                  <input type="text" v-model="items[index].name">
                 </div>
               </div>
-               <div class="col-2">
+              <div class="col-2">
                 <div class="item-name" v-for="(item,index) in items" v-bind:style="{ height: (blockSize+2) + 'px' }">
-                 <select type="text" v-model="items[index].highlightColor">
-                   <option value="green">green</option>
-                   <option value="blue">blue</option>
-                   <option value="yellow">yelllow</option>
-                 </select>
+                  <select type="text" v-model="items[index].highlightColor">
+                    <option style="color:green;" value="green">green</option>
+                    <option style="color: blue;" value="blue">blue</option>
+                    <option style="color: yellow;" value="yellow">yelllow</option>
+                  </select>
                 </div>
               </div>
               <div class="col-6">
@@ -103,12 +103,91 @@
               </div>
             </div>
             <button id="btnBuild" class="btn btn-primary" v-on:click="buildMatrix">Build matrix</button>
-            <button id="btnTrain" class="btn btn-primary">Training</button>
+            <button id="btnTrain" class="btn btn-primary" v-on:click="train">Training</button>
+            <div class="mt-3" id="container">
+              <div class="item-details" v-for="(item, index) in items">
+                <h3>{{item.name}}</h3>
+                <button v-if="item.matrix.length"
+                  @click="item.showMatrix=(!item.showMatrix)">{{item.showMatrix?'Hide':'Show'}} matrix</button>
+                <div v-if="item.showMatrix">
+                  <table class="matrix">
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th v-for="(cell,index) in item.matrix[0]">{{index+1}}</td>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(row,rowIndex) in item.matrix">
+                        <th>{{rowIndex+1}}</th>
+                        <td v-for="(cell) in row">{{cell}}</td>
+                      </tr>
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <th>t</th>
+                        <td v-for="(t) in item.tolerance">{{t.top}}</td>
+                      </tr>
+                      <tr>
+                        <th>c</th>
+                        <th class="highlight" v-for="(c) in item.center">{{c}}</th>
+                      </tr>
+                      <tr>
+                        <th>b</th>
+                        <td v-for="(t) in item.tolerance">{{t.bottom}}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                <button v-if="item.binMatrix.length"
+                  @click="item.showBinaryMatrix=(!item.showBinaryMatrix)">{{item.showBinaryMatrix?'Hide':'Show'}} binary matrix</button>
+                <div v-if="item.showBinaryMatrix">
+                  <table class="matrix">
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th class="legend" v-for="(cell,index) in item.binMatrix[0]">{{index+1}}</td>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(row,rowIndex) in item.binMatrix">
+                        <th class="legend">{{rowIndex+1}}</th>
+                        <td :class="{ 'black': cell==0}" v-for="(cell) in row">{{cell}}</td>
+                      </tr>
+                    </tbody>
+                    <tfoot>
+                      <tr class="etalon">
+                        <th>e</th>
+                        <td v-for="(e) in item.etalon">{{e}}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
 
-            <div v-if="trainingComlete" id="container">
-              <div v-for="(item, index) in items">
-                <div class="label mt-2">{{item.name}};</div>
-                <div v-if="item.neighbour>=0">neighbour: {{items[item.neighbour].name}} distance to neighbour:
+                </div>
+
+                <button v-if="trainingComlete"
+                  @click="item.showTrainingRes=(!item.showTrainingRes)">{{item.showTrainingRes? 'Hide':'Show'}} training
+                  results</button>
+                <table class="table" v-if="item.showTrainingRes">
+                  <thead>
+                    <tr>
+                      <th>delta </th>
+                      <th>neighbour </th>
+                      <th>distanse to neighbour</th>
+                      <th>radius</th>
+                      <th>no_rab_obl_Radius</th>
+                      <th>no_rab_obl_dostovirn_D1</th>
+                      <th>betta error</th>
+                      <th>dostovirn_D1</th>
+                      <th>maxKFE</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(result,index) in item.trainingResults">
+                      <td>{{ index }}</td>
+                      <td>{{ result.neighbour }}</td>
+                      <td>{{ result.distanceToNeighbour}}</td>
+                      <!--<div v-if="item.neighbour>=0">neighbour: {{items[item.neighbour].name}} distance to neighbour:
                   {{item.distanceToNeighbour}}</div>
                 <div>radius: {{item.radius}}</div>
                 <div>no_rab_obl_Radius: {{item.no_rab_obl_Radius}}</div>
@@ -117,56 +196,16 @@
                 <div>pomylka_betta: {{item.pomylka_betta}}</div>
                 <div>maxKFE: {{item.maxKFE}}</div>
                 <div>dostovirn_D1: {{item.dostovirn_D1}}</div>
+                -->
+                      <td>{{result.radius}}</td>
+                      <td>{{result.no_rab_obl_Radius}}</td>
+                      <td>{{result.no_rab_obl_dostovirn_D1}}</td>
+                      <td>{{result.no_rab_pomylka_betta}}</td>
+                      <td>{{result.no_rab_pomylka_betta}}</td>
+                      <td>{{result.maxKFE}}</td>
 
-                <table class="matrix">
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th v-for="(cell,index) in item.matrix[0]">{{index+1}}</td>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(row,rowIndex) in item.matrix">
-                      <th>{{rowIndex+1}}</th>
-                      <td v-for="(cell) in row">{{cell}}</td>
                     </tr>
                   </tbody>
-                  <tfoot>
-                    <tr>
-                      <th>t</th>
-                      <td v-for="(t) in item.tolerance">{{t.top}}</td>
-                    </tr>
-                    <tr>
-                      <th>c</th>
-                      <th class="highlight" v-for="(c) in item.center">{{c}}</th>
-                    </tr>
-                    <tr>
-                      <th>b</th>
-                      <td v-for="(t) in item.tolerance">{{t.bottom}}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-                <p>Binary matrix</p>
-
-                <table class="matrix">
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th v-for="(cell,index) in item.binMatrix[0]">{{index+1}}</td>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(row,rowIndex) in item.binMatrix">
-                      <th>{{rowIndex+1}}</th>
-                      <td v-for="(cell) in row">{{cell}}</td>
-                    </tr>
-                  </tbody>
-                  <tfoot>
-                    <tr class="etalon">
-                      <th>e</th>
-                      <td v-for="(e) in item.etalon">{{e}}</td>
-                    </tr>
-                  </tfoot>
                 </table>
               </div>
             </div>

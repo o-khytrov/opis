@@ -48,3 +48,10 @@ canvas {
     height: 50%;
     margin: auto;
 }
+.black{
+    color: white;
+    background-color: black;
+}
+.legend{
+    background-color: lightblue;
+}
