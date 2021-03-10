@@ -9,12 +9,13 @@ class item {
         this.binMatrix = new Array();   //бінатрна матриця
         this.etalon = new Array();      //еталонний вектор класу
         this.trainingResults = new Array();
-        
+
         this.highlightColor = '';        //колір підсвітки на екзамені
         this.showMatrix = false;
         this.showBinaryMatrix = false;
         this.showTrainingRes = false;
-        
+        this.showChart = false;
+
     }
     //створення матриці зображення з об'єкту canvas 
     buildMatrix = function (imageData, method) {
@@ -45,6 +46,7 @@ class item {
         this.etalon = new Array();
         this.tolerance = new Array();
         this.center = new Array();
+        this.trainingResults= new Array();
     }
     // визначення еталонного вектору
     calculateCenter = function (delta) {
@@ -98,7 +100,7 @@ class trainingResult {
     constructor() {
 
         this.neighbour = -1;            //індекс класу сусіда
-        this.distanceToNeighbour = 0;   //відстань до сусіда
+        this.distanceToNeighbour =50;   //відстань до сусіда;
         this.maxKFE = -1;
         this.no_rab_obl_max_KFE = -1;
         this.radius = 0;
@@ -108,3 +110,39 @@ class trainingResult {
         this.dostovirn_D1 = 0;
     }
 }
+
+Vue.component('line-chart', {
+    extends: VueChartJs.Line,
+    props: {
+        chartdata: {
+            type: Array,
+            default: null
+        }
+    },
+    mounted() {
+        let data = {
+            labels: new Array(), datasets: [
+                { label: 'Radius', data: new Array() },
+                { label: 'Delta', data: new Array() },
+            ]
+        };
+
+        for (let i = 0; i < this.chartdata.length; i++) {
+            data.datasets[0].data.push(this.chartdata[i].maxKFE);
+            data.datasets[1].data.push(i);
+            data.labels.push(this.chartdata[i].radius);
+        }
+        this.renderChart(data, {
+            responsive: true, maintainAspectRatio: false, scales: {
+                yAxes: [{
+                    scaleLabel: { display: true, labelString: "Iнформаційна міра" }
+                }],
+                xAxes: [{
+                    scaleLabel: { display: true, labelString: "Радіус" },
+                    scaleLabel: { display: true, labelString: "Delta" }
+                }]
+            }
+        })
+    }
+
+})

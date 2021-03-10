@@ -18,6 +18,8 @@
   integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
   integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>
+<script src="https://unpkg.com/vue-chartjs/dist/vue-chartjs.min.js"></script>
 
 <body>
   <div id="app">
@@ -59,12 +61,12 @@
                 </div>
               </div>
               <div class="col-2">
-                <div class="item-name" v-for="(item,index) in items" v-bind:style="{ height: (blockSize+2) + 'px' }">
+                <div class="item-name" v-for="(item,index) in items" v-bind:style="{ height: (+blockSize+2) + 'px' }">
                   <input type="text" v-model="items[index].name">
                 </div>
               </div>
               <div class="col-2">
-                <div class="item-name" v-for="(item,index) in items" v-bind:style="{ height: (blockSize+2) + 'px' }">
+                <div class="item-name" v-for="(item,index) in items" v-bind:style="{ height: (+blockSize+2) + 'px' }">
                   <select type="text" v-model="items[index].highlightColor">
                     <option style="color:green;" value="green">green</option>
                     <option style="color: blue;" value="blue">blue</option>
@@ -100,6 +102,8 @@
                   <label for="delta">Delta {{ delta }}</label>
                   <input type="range" min="-1" max="150" class="slider" id="delta" v-model="delta">
                 </div>
+                <div>Optimal delta: {{optimalDelta}}</div>
+                <div>Max Em : {{maxEm}}</div>
               </div>
             </div>
             <button id="btnBuild" class="btn btn-primary" v-on:click="buildMatrix">Build matrix</button>
@@ -140,7 +144,8 @@
                   </table>
                 </div>
                 <button v-if="item.binMatrix.length"
-                  @click="item.showBinaryMatrix=(!item.showBinaryMatrix)">{{item.showBinaryMatrix?'Hide':'Show'}} binary matrix</button>
+                  @click="item.showBinaryMatrix=(!item.showBinaryMatrix)">{{item.showBinaryMatrix?'Hide':'Show'}} binary
+                  matrix</button>
                 <div v-if="item.showBinaryMatrix">
                   <table class="matrix">
                     <thead>
@@ -164,56 +169,53 @@
                   </table>
 
                 </div>
-
                 <button v-if="trainingComlete"
                   @click="item.showTrainingRes=(!item.showTrainingRes)">{{item.showTrainingRes? 'Hide':'Show'}} training
                   results</button>
-                <table class="table" v-if="item.showTrainingRes">
-                  <thead>
-                    <tr>
-                      <th>delta </th>
-                      <th>neighbour </th>
-                      <th>distanse to neighbour</th>
-                      <th>radius</th>
-                      <th>no_rab_obl_Radius</th>
-                      <th>no_rab_obl_dostovirn_D1</th>
-                      <th>betta error</th>
-                      <th>dostovirn_D1</th>
-                      <th>maxKFE</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="(result,index) in item.trainingResults">
-                      <td>{{ index }}</td>
-                      <td>{{ result.neighbour }}</td>
-                      <td>{{ result.distanceToNeighbour}}</td>
-                      <!--<div v-if="item.neighbour>=0">neighbour: {{items[item.neighbour].name}} distance to neighbour:
-                  {{item.distanceToNeighbour}}</div>
-                <div>radius: {{item.radius}}</div>
-                <div>no_rab_obl_Radius: {{item.no_rab_obl_Radius}}</div>
-                <div>no_rab_obl_dostovirn_D1: {{item.no_rab_obl_dostovirn_D1}}</div>
-                <div>no_rab_pomylka_betta: {{item.no_rab_pomylka_betta}}</div>
-                <div>pomylka_betta: {{item.pomylka_betta}}</div>
-                <div>maxKFE: {{item.maxKFE}}</div>
-                <div>dostovirn_D1: {{item.dostovirn_D1}}</div>
-                -->
-                      <td>{{result.radius}}</td>
-                      <td>{{result.no_rab_obl_Radius}}</td>
-                      <td>{{result.no_rab_obl_dostovirn_D1}}</td>
-                      <td>{{result.no_rab_pomylka_betta}}</td>
-                      <td>{{result.no_rab_pomylka_betta}}</td>
-                      <td>{{result.maxKFE}}</td>
-
-                    </tr>
-                  </tbody>
-                </table>
+                <div v-if="item.showTrainingRes">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>delta </th>
+                        <th>neighbour </th>
+                        <th>distanse to neighbour</th>
+                        <th>radius</th>
+                        <th>no_rab_obl_Radius</th>
+                        <th>no_rab_obl_dostovirn_D1</th>
+                        <th>betta error</th>
+                        <th>dostovirn_D1</th>
+                        <th>maxKFE</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(result,index) in item.trainingResults" :class="{ 'highlight': index==optimalDelta}">
+                        <td>{{index }}</td>
+                        <td>{{items[result.neighbour].name}}</td>
+                        <td>{{result.distanceToNeighbour}}</td>
+                        <td>{{result.radius}}</td>
+                        <td>{{result.no_rab_obl_Radius}}</td>
+                        <td>{{result.no_rab_obl_dostovirn_D1}}</td>
+                        <td>{{result.no_rab_pomylka_betta}}</td>
+                        <td>{{result.no_rab_pomylka_betta}}</td>
+                        <td>{{result.maxKFE}}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <button v-if="trainingComlete" @click="item.showChart=(!item.showChart)">{{item.showChart?
+                  'Hide':'Show'}} chart</button>
+                <div v-if="item.showChart">
+                  <line-chart :chartdata="item.trainingResults"></line-chart>
+                </div>
               </div>
             </div>
           </div>
         </div>
         <div class="tab-pane fade" :class="{ 'active show': isActive('exam') }" id="exam">
-          <button class="btn btn-primary mb-3" v-on:click="exam" :disabled="!trainingComlete">Run exam</button>
-          <button class="btn btn-danger mb-3" v-on:click="reset" :disabled="!trainingComlete">Reset exam</button>
+          <div>
+            <button class="btn btn-primary mb-3" v-on:click="exam" :disabled="!trainingComlete">Run exam</button>
+            <button class="btn btn-danger mb-3" v-on:click="reset" :disabled="!trainingComlete">Reset exam</button>
+          </div>
 
         </div>
       </div>

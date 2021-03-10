@@ -38,13 +38,13 @@ function luminosity(pixel) {
 }
 
 //Критерій Кульбака
-function KFE(kodova_vidstan, c) {
+function KFE(distance, c) {
     var k1 = 0;
     var k2 = 0;
-    var rowNumber = kodova_vidstan[0].length;
+    var rowNumber = distance[0].length;
     for (var r = 0; r < rowNumber; r++) {
-        if (kodova_vidstan[0][r] <= c) k1++;
-        if (kodova_vidstan[1][r] <= c) k2++;
+        if (distance[0][r] <= c) k1++;
+        if (distance[1][r] <= c) k2++;
     }
     var td1 = k1 / rowNumber;
     var tbetta = 3 / rowNumber;
@@ -53,66 +53,63 @@ function KFE(kodova_vidstan, c) {
     return { td1, tbetta, kfe };
 }
 
-function calculateRadius(items,delta) {
+function calculateRadius(items, delta) {
 
-    for (var i = 0; i < items.length; i++) {
-        var currentItem = items[i];
-        var kodova_vidstan = new Array();
-        kodova_vidstan.push(new Array());
-        kodova_vidstan.push(new Array());
+    items.forEach(currentItem=> {
+        
+        let trainingResult = currentItem.trainingResults[delta];
+        var distance = new Array();//кодова відстань
+        distance.push(new Array());
+        distance.push(new Array());
         for (var r = 0; r < currentItem.binMatrix.length; r++) {
-            kodova_vidstan[0][r] = 0;
-            kodova_vidstan[1][r] = 0;
+            distance[0][r] = 0;
+            distance[1][r] = 0;
             for (var c = 0; c < currentItem.binMatrix[r].length; c++) {
-                kodova_vidstan[0][r] += Math.abs(currentItem.etalon[c] - currentItem.binMatrix[c][r]);
-                kodova_vidstan[1][r] += Math.abs(currentItem.etalon[c] - items[currentItem.neighbour].binMatrix[c][r]);
+                distance[0][r] += Math.abs(currentItem.etalon[c] - currentItem.binMatrix[c][r]);
+                distance[1][r] += Math.abs(currentItem.etalon[c] - items[trainingResult.neighbour].binMatrix[c][r]);
             }
         }
+
         for (var c = 0; c < currentItem.binMatrix[0].length; c++) {
-            var kfeRes = KFE(kodova_vidstan, c);
+            var kfeRes = KFE(distance, c);
 
             var kfe = kfeRes.kfe;
             var td1 = kfeRes.td1;
             var tbetta = kfeRes.tbetta;
 
-            if (kfe > currentItem.no_rab_obl_max_KFE) {
-                currentItem.trainingResults[delta].no_rab_obl_max_KFE = kfe;
-                currentItem.trainingResults[delta].no_rab_obl_Radius = c;
-                currentItem.trainingResults[delta].no_rab_obl_dostovirn_D1 = td1;
-                currentItem.trainingResults[delta].no_rab_pomylka_betta = tbetta;;
+            if (kfe > trainingResult.no_rab_obl_max_KFE) {
+                trainingResult.no_rab_obl_max_KFE = kfe;
+                trainingResult.no_rab_obl_Radius = c;
+                trainingResult.no_rab_obl_dostovirn_D1 = td1;
+                trainingResult.no_rab_pomylka_betta = tbetta;;
             }
-            if (td1 >= 0.5 && tbetta < 0.5 && c < currentItem.distanceToNeighbour) {
-                if (kfe > currentItem.trainingResults[delta].maxKFE) {
-                    currentItem.trainingResults[delta].maxKFE = kfe;
-                    currentItem.trainingResults[delta].radius = c;
-                    currentItem.trainingResults[delta].dostovirn_D1 = td1;
-                    currentItem.trainingResults[delta].pomylka_betta = tbetta;
+            if (td1 >= 0.5 && tbetta < 0.5 && c < trainingResult.distanceToNeighbour) {
+                if (kfe > trainingResult.maxKFE) {
+                    trainingResult.maxKFE = kfe;
+                    trainingResult.radius = c;
+                    trainingResult.dostovirn_D1 = td1;
+                    trainingResult.pomylka_betta = tbetta;
                 }
             }
-
         }
-    }
-
+    });
 }
 
 function caclulateDistanceToNeighbours(items, delta) {
     for (var i = 0; i < items.length; i++) {
+        var currentItem = items[i];
+        let result = new trainingResult();
         for (var j = 0; j < items.length; j++) {
             if (i == j) continue;
-            var sum = 0;
-            var currentItem = items[i];
-            var result = new trainingResult();
-            var neighbour = items[j];
-            for (var c = 0; c < currentItem.etalon.length; c++)
-                sum += Math.abs(currentItem.etalon[c] - neighbour.etalon[c])
-            if (sum <= currentItem.distanceToNeighbour) {
-                currentItem.neighbour = j;
-                currentItem.distanceToNeighbour = sum;
+            let neighbour = items[j];
+            let distance = hemmingDistance(currentItem.etalon, neighbour.etalon);
+            if (distance <= result.distanceToNeighbour) {
                 result.neighbour = j;
-                result.distanceToNeighbour = sum;
+                result.distanceToNeighbour = distance;
             }
-            currentItem.trainingResults[delta]=result;
         }
+
+        currentItem.trainingResults[delta] = result;
     }
 }
 
@@ -126,16 +123,18 @@ var app = new Vue({
         delta: 5,              // початкове значення Delta
         items: [],              // массив класів розпізнавання
         trainingComlete: false, // тренування завершене, система готова до екзамену
-        blockSize: 50
+        blockSize: 50,
+        optimalDelta: 0,
+        maxEm: 0
     },
     methods: {
         //Побудова матриць
         buildMatrix: function () {
             var canvases = this.$el.querySelectorAll('canvas.training');
-            for (var c= 0; c < canvases.length; c++) {
+            for (var c = 0; c < canvases.length; c++) {
                 var canvas = canvases[c];
                 var context = canvas.getContext("2d");
-                var imageData= context.getImageData(0,0,canvas.width,canvas.height);
+                var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
                 var i = this.items[c];
                 i.reset();
                 i.trainingResults = new Array(this.delta);
@@ -144,16 +143,39 @@ var app = new Vue({
         },
         //навчання
         train: function () {
-            this.trainingComlete=false;
-            for (let delta = 0; delta < this.delta; delta++ ) {
+            this.trainingComlete = false;
+            for (let delta = 0; delta < this.delta; delta++) {
                 for (var i = 0; i < this.items.length; i++) {
                     this.items[i].calculateCenter(delta);
                     this.items[i].buildBinaryMatrix(delta)
                 }
-                caclulateDistanceToNeighbours(this.items,delta);
-                calculateRadius(this.items,delta);
+                caclulateDistanceToNeighbours(this.items, delta);
+                calculateRadius(this.items, delta);
             }
-            this.trainingComlete=true;
+
+            var emAvg = 0;
+            for (let delta = 0; delta < this.delta; delta++) {
+                this.items.forEach(item => {
+                    if (item.trainingResults[delta].radius == 0)
+                        emAvg += item.trainingResults[delta].no_rab_obl_dostovirn_D1;
+                    else
+                        emAvg += item.trainingResults[delta].maxKFE;
+                });
+
+                emAvg = Math.round(emAvg / this.items.length);
+                if (emAvg > this.maxEm) {
+                    this.maxEm = emAvg;
+                    this.optimalDelta = delta;
+                }
+
+            }
+
+            this.items.forEach(item => {
+                item.calculateCenter(this.optimalDelta);
+                item.buildBinaryMatrix(this.optimalDelta);
+            });
+
+            this.trainingComlete = true;
         },
         //вибір базового зображення
         addMap: function (event) {
@@ -255,6 +277,7 @@ var app = new Vue({
                 preview.className = "preview";
                 preview.width = app.blockSize;
                 preview.height = app.blockSize;
+                preview.onclick = (e) => download(e);
 
                 var previewContext = preview.getContext("2d");
                 previewContext.putImageData(sourceImageData, 0, 0);
@@ -292,9 +315,9 @@ function fullExam(items, method) {
     let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
     var examItem = new item();
-    examItem.buildMatrix(imageData,method);
-    var examMatrix = examItem.matrix; 
-        var step = +app.blockSize;
+    examItem.buildMatrix(imageData, method);
+    var examMatrix = examItem.matrix;
+    var step = +app.blockSize;
 
     for (var x = 0; x < canvas.width; x += step)
         for (var y = 0; y < canvas.height; y++)
@@ -308,10 +331,12 @@ function fullExam(items, method) {
         for (var c = 0; c < canvas.width; c += step) {
             var testArea = getAreaItem(examMatrix, r, c, step);
             var testResult = ExamArea(testArea, items);
-            var color = 'red';
-            if (testResult != -1)
-                color = testResult;
-            highlightArea(imageData, r, c, step, color, 100);
+            if (testResult != -1) {
+                ctx.font = "8px Georgia";
+                ctx.fillText(testResult.name, r, c);
+                color = testResult.highlightColor;
+                highlightArea(imageData, r, c, step, color, 100);
+            }
         }
 
     ctx.putImageData(imageData, 0, 0);
@@ -376,7 +401,7 @@ function getAreaItem(matrix, startRow, startCol, distance) {
         }
         currentRow++;
     }
-    exItem.calculateCenter(+app.delta); //TODO
+    exItem.calculateCenter(+app.optimalDelta);
     exItem.buildBinaryMatrix();
     return exItem;
 }
@@ -385,31 +410,31 @@ function getAreaItem(matrix, startRow, startCol, distance) {
 function ExamArea(exItem, items) {
     var maxf = -1;
 
-    var retVal = '';
+    var retVal = -1;
     var maxDistanse = 50; //TODO
+    var delta = +app.optimalDelta;
+    let result = -1;
 
     for (var i = 0; i < items.length; i++) {
         var rclas = items[i];
         var distance = hemmingDistance(exItem.etalon, rclas.etalon);
         console.log(`distance to ${rclas.name}: ${distance}`);
-        var result = 1 - distance / rclas.radius;
+        result = 1 - distance / rclas.trainingResults[delta].radius;
         console.log(`result: ${result}`);
-        /*
+
         if (maxf < result && result >= 0) {
             console.log(`this is ${rclas.name}`);
             maxf = result;
-            return rclas.name;
-        }
-        if (result <= 0) {
-            //console.log(`this is not ${rclas.name}`);
-            return -1;
-        }
-        */
-        if (distance < maxDistanse) {
-            retVal = rclas.highlightColor;
-            maxDistanse = distance;
+            retVal = rclas;
         }
 
     }
+
     return retVal;
+}
+function download(e) {
+    var link = document.createElement("a");
+    link.download = "image.bmp";
+    link.href = e.target.toDataURL("image/bmp").replace("image/bmp", "image/octet-stream");
+    link.click();
 }
