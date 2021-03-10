@@ -55,8 +55,8 @@ function KFE(distance, c) {
 
 function calculateRadius(items, delta) {
 
-    items.forEach(currentItem=> {
-        
+    items.forEach(currentItem => {
+
         let trainingResult = currentItem.trainingResults[delta];
         var distance = new Array();//кодова відстань
         distance.push(new Array());
@@ -96,6 +96,7 @@ function calculateRadius(items, delta) {
 }
 
 function caclulateDistanceToNeighbours(items, delta) {
+
     for (var i = 0; i < items.length; i++) {
         var currentItem = items[i];
         let result = new trainingResult();

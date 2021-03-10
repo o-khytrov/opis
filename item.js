@@ -123,13 +123,13 @@ Vue.component('line-chart', {
         let data = {
             labels: new Array(), datasets: [
                 { label: 'Radius', data: new Array() },
-                { label: 'Delta', data: new Array() },
+                //{ label: 'Delta', data: new Array() },
             ]
         };
 
         for (let i = 0; i < this.chartdata.length; i++) {
             data.datasets[0].data.push(this.chartdata[i].maxKFE);
-            data.datasets[1].data.push(i);
+            //data.datasets[1].data.push(i);
             data.labels.push(this.chartdata[i].radius);
         }
         this.renderChart(data, {
@@ -138,7 +138,7 @@ Vue.component('line-chart', {
                     scaleLabel: { display: true, labelString: "Iнформаційна міра" }
                 }],
                 xAxes: [{
-                    scaleLabel: { display: true, labelString: "Радіус" },
+                    //scaleLabel: { display: true, labelString: "Радіус" },
                     scaleLabel: { display: true, labelString: "Delta" }
                 }]
             }
