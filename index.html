@@ -43,8 +43,8 @@
       <div class="tab-content py-3" id="myTabContent">
         <div class="tab-pane fade" :class="{ 'active show': isActive('setup')}" id="setup">
           <div class="slidecontainer">
-            <label for="delta">Block size {{ blockSize }}</label>
-            <input type="range" min="0" max="150" class="slider" id="blockSize" v-model="blockSize">
+            <label for="delta">Frame size {{ frameSize }}</label>
+            <input type="range" step="25" min="25" max="100" class="slider" id="frameSize" v-model="frameSize" :disabled="sourceImageSelected">
           </div>
           <input class="mb-2" type="file" id="addMap" @change="addMap">
           <div id="preview">
@@ -61,12 +61,12 @@
                 </div>
               </div>
               <div class="col-2">
-                <div class="item-name" v-for="(item,index) in items" v-bind:style="{ height: (+blockSize+2) + 'px' }">
+                <div class="item-name" v-for="(item,index) in items" v-bind:style="{ height: (+frameSize+2) + 'px' }">
                   <input type="text" v-model="items[index].name">
                 </div>
               </div>
               <div class="col-2">
-                <div class="item-name" v-for="(item,index) in items" v-bind:style="{ height: (+blockSize+2) + 'px' }">
+                <div class="item-name" v-for="(item,index) in items" v-bind:style="{ height: (+frameSize+2) + 'px' }">
                   <select type="text" v-model="items[index].highlightColor">
                     <option style="color:green;" value="green">green</option>
                     <option style="color: blue;" value="blue">blue</option>

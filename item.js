@@ -102,7 +102,7 @@ class trainingResult {
         this.neighbour = -1;            //індекс класу сусіда
         this.distanceToNeighbour =50;   //відстань до сусіда;
         this.maxKFE = -1;
-        this.no_rab_obl_max_KFE = -1;
+        this.no_rab_obl_max_KFE = 0;
         this.radius = 0;
         this.no_rab_obl_Radius = 0;
         this.no_rab_obl_dostovirn_D1 = 0;

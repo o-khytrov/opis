@@ -9,7 +9,7 @@ ImageData.prototype.getPixel = function (x, y) {
     }
 }
 
-//втановлення піксеня за координатами
+//вcтановлення пікселя за координатами
 ImageData.prototype.setPixel = function (x, y, c) {
     var i = (x + y * this.width) * 4;
     this.data[i] = c.R;
@@ -47,7 +47,7 @@ function KFE(distance, c) {
         if (distance[1][r] <= c) k2++;
     }
     var td1 = k1 / rowNumber;
-    var tbetta = 3 / rowNumber;
+    var tbetta = k2/ rowNumber;
     var d1b = td1 - tbetta;
     var kfe = d1b * Math.log((1 + d1b + 0.1) / (1 - d1b + 0.1)) / Math.log(2);
     return { td1, tbetta, kfe };
@@ -77,20 +77,22 @@ function calculateRadius(items, delta) {
             var td1 = kfeRes.td1;
             var tbetta = kfeRes.tbetta;
 
+            /*
             if (kfe > trainingResult.no_rab_obl_max_KFE) {
                 trainingResult.no_rab_obl_max_KFE = kfe;
                 trainingResult.no_rab_obl_Radius = c;
                 trainingResult.no_rab_obl_dostovirn_D1 = td1;
                 trainingResult.no_rab_pomylka_betta = tbetta;;
             }
-            if (td1 >= 0.5 && tbetta < 0.5 && c < trainingResult.distanceToNeighbour) {
+            */
+           // if (td1 >= 0.5 && tbetta < 0.5 && c < trainingResult.distanceToNeighbour) {
                 if (kfe > trainingResult.maxKFE) {
                     trainingResult.maxKFE = kfe;
                     trainingResult.radius = c;
                     trainingResult.dostovirn_D1 = td1;
                     trainingResult.pomylka_betta = tbetta;
                 }
-            }
+            //}
         }
     });
 }
@@ -124,9 +126,10 @@ var app = new Vue({
         delta: 5,              // початкове значення Delta
         items: [],              // массив класів розпізнавання
         trainingComlete: false, // тренування завершене, система готова до екзамену
-        blockSize: 50,
+        frameSize: 50,
         optimalDelta: 0,
-        maxEm: 0
+        maxEm: 0,
+        sourceImageSelected:false //базове зображення
     },
     methods: {
         //Побудова матриць
@@ -190,14 +193,15 @@ var app = new Vue({
                         img.onload = function () {
 
                             var c = document.getElementById('source');
-                            var w = Math.round(this.width / app.blockSize) * app.blockSize;
-                            var h = Math.round(this.height / app.blockSize) * app.blockSize;
+                            var w = Math.round(this.width / app.frameSize) * app.frameSize;
+                            var h = Math.round(this.height / app.frameSize) * app.frameSize;
                             c.width = w;
                             c.height = h;
                             var ctx = c.getContext("2d");
                             ctx.drawImage(this, 0, 0, w, h);
                             app.setupOverlay(w, h);
                             initExamCanvas();
+                            app.sourceImageSelected=true;
                         }
                         img.src = fr.result;
                     }
@@ -250,7 +254,7 @@ var app = new Vue({
             //Mouseup
             canvas.onmouseup = (ev) => {
 
-                var size = app.blockSize;
+                var size = app.frameSize;
                 var sourceCanvas = document.getElementById('source');
                 var sourceContext = sourceCanvas.getContext("2d");
 
@@ -267,8 +271,8 @@ var app = new Vue({
 
                 var c = document.createElement("canvas");
                 c.className = "training";
-                c.width = app.blockSize;
-                c.height = app.blockSize;
+                c.width = app.frameSize;
+                c.height = app.frameSize;
 
                 var context = c.getContext("2d");
                 context.putImageData(sourceImageData, 0, 0);
@@ -276,8 +280,8 @@ var app = new Vue({
 
                 var preview = document.createElement("canvas");
                 preview.className = "preview";
-                preview.width = app.blockSize;
-                preview.height = app.blockSize;
+                preview.width = app.frameSize;
+                preview.height = app.frameSize;
                 preview.onclick = (e) => download(e);
 
                 var previewContext = preview.getContext("2d");
@@ -296,7 +300,7 @@ var app = new Vue({
 
                 mousex = parseInt(clientX - canvasx);
                 mousey = parseInt(clientY - canvasy);
-                let size = app.blockSize;
+                let size = app.frameSize;
                 ctx.clearRect(-1, 0, canvas.width, canvas.height); //clear canvas
                 ctx.beginPath();
                 ctx.rect(mousex - size / 2, mousey - size / 2, size, size);
@@ -318,7 +322,7 @@ function fullExam(items, method) {
     var examItem = new item();
     examItem.buildMatrix(imageData, method);
     var examMatrix = examItem.matrix;
-    var step = +app.blockSize;
+    var step = +app.frameSize;
 
     for (var x = 0; x < canvas.width; x += step)
         for (var y = 0; y < canvas.height; y++)
@@ -330,8 +334,7 @@ function fullExam(items, method) {
 
     for (var r = 0; r < canvas.height; r += step)
         for (var c = 0; c < canvas.width; c += step) {
-            var testArea = getAreaItem(examMatrix, r, c, step);
-            var testResult = ExamArea(testArea, items);
+            var testArea = getAreaItem(examMatrix, r, c, step); var testResult = ExamArea(testArea, items);
             if (testResult != -1) {
                 ctx.font = "8px Georgia";
                 ctx.fillText(testResult.name, r, c);
