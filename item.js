@@ -48,7 +48,7 @@ class item {
         this.center = new Array();
         this.trainingResults= new Array();
     }
-    // визначення еталонного вектору
+    // визначення центру 
     calculateCenter = function (delta) {
         this.tolerance = new Array();
         this.center = new Array();
@@ -102,7 +102,7 @@ class trainingResult {
         this.neighbour = -1;            //індекс класу сусіда
         this.distanceToNeighbour =0;   //відстань до сусіда;
         this.maxKFE = -1;
-        this.no_rab_obl_max_KFE = 0;
+        this.no_rab_obl_max_KFE = -1;
         this.radius = 0;
         this.no_rab_obl_Radius = 0;
         this.no_rab_obl_dostovirn_D1 = 0;
