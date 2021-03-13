@@ -47,7 +47,7 @@ function KFE(distance, c) {
         if (distance[1][r] <= c) k2++;
     }
     var td1 = k1 / rowNumber;
-    var tbetta = k2/ rowNumber;
+    var tbetta = k2 / rowNumber;
     var d1b = td1 - tbetta;
     var kfe = d1b * Math.log((1 + d1b + 0.1) / (1 - d1b + 0.1)) / Math.log(2);
     return { td1, tbetta, kfe };
@@ -65,8 +65,10 @@ function calculateRadius(items, delta) {
             distance[0][r] = 0;
             distance[1][r] = 0;
             for (var c = 0; c < currentItem.binMatrix[r].length; c++) {
+
                 distance[0][r] += Math.abs(currentItem.etalon[c] - currentItem.binMatrix[c][r]);
                 distance[1][r] += Math.abs(currentItem.etalon[c] - items[trainingResult.neighbour].binMatrix[c][r]);
+
             }
         }
 
@@ -77,22 +79,20 @@ function calculateRadius(items, delta) {
             var td1 = kfeRes.td1;
             var tbetta = kfeRes.tbetta;
 
-            /*
             if (kfe > trainingResult.no_rab_obl_max_KFE) {
                 trainingResult.no_rab_obl_max_KFE = kfe;
                 trainingResult.no_rab_obl_Radius = c;
                 trainingResult.no_rab_obl_dostovirn_D1 = td1;
                 trainingResult.no_rab_pomylka_betta = tbetta;;
             }
-            */
-           // if (td1 >= 0.5 && tbetta < 0.5 && c < trainingResult.distanceToNeighbour) {
+            if (td1 >= 0.5 && tbetta < 0.5 && c < trainingResult.distanceToNeighbour) {
                 if (kfe > trainingResult.maxKFE) {
                     trainingResult.maxKFE = kfe;
                     trainingResult.radius = c;
                     trainingResult.dostovirn_D1 = td1;
                     trainingResult.pomylka_betta = tbetta;
                 }
-            //}
+            }
         }
     });
 }
@@ -102,6 +102,7 @@ function caclulateDistanceToNeighbours(items, delta) {
     for (var i = 0; i < items.length; i++) {
         var currentItem = items[i];
         let result = new trainingResult();
+        result.distanceToNeighbour = currentItem.etalon.length;
         for (var j = 0; j < items.length; j++) {
             if (i == j) continue;
             let neighbour = items[j];
@@ -114,6 +115,21 @@ function caclulateDistanceToNeighbours(items, delta) {
 
         currentItem.trainingResults[delta] = result;
     }
+}
+
+function contrastImage(imageData, contrast) {  // contrast as an integer percent  
+    var data = imageData.data;  // original array modified, but canvas not updated
+    contrast *= 2.55; // or *= 255 / 100; scale integer percent to full range
+    var factor = (255 + contrast) / (255.01 - contrast);  //add .1 to avoid /0 error
+
+    for (var i = 0; i < data.length; i += 4)  //pixel values in 4-byte blocks (r,g,b,a)
+    {
+        data[i] = factor * (data[i] - 128) + 128;     //r value
+        data[i + 1] = factor * (data[i + 1] - 128) + 128; //g value
+        data[i + 2] = factor * (data[i + 2] - 128) + 128; //b value
+
+    }
+    return imageData;  //optional (e.g. for filter function chaining)
 }
 
 //Інтерфейс програми
@@ -129,10 +145,11 @@ var app = new Vue({
         frameSize: 50,
         optimalDelta: 0,
         maxEm: 0,
-        sourceImageSelected:false //базове зображення
+        sourceImageSelected: false, //базове зображення
+        contrast: 0
     },
     methods: {
-        //Побудова матриць
+        //побудова матриць
         buildMatrix: function () {
             var canvases = this.$el.querySelectorAll('canvas.training');
             for (var c = 0; c < canvases.length; c++) {
@@ -157,6 +174,7 @@ var app = new Vue({
                 calculateRadius(this.items, delta);
             }
 
+            //визначення оптимального значення delta
             var emAvg = 0;
             for (let delta = 0; delta < this.delta; delta++) {
                 this.items.forEach(item => {
@@ -171,9 +189,9 @@ var app = new Vue({
                     this.maxEm = emAvg;
                     this.optimalDelta = delta;
                 }
-
             }
 
+            //перебудова бінарних матриць і еталонних векторів з оптимальним значенням delta
             this.items.forEach(item => {
                 item.calculateCenter(this.optimalDelta);
                 item.buildBinaryMatrix(this.optimalDelta);
@@ -201,7 +219,7 @@ var app = new Vue({
                             ctx.drawImage(this, 0, 0, w, h);
                             app.setupOverlay(w, h);
                             initExamCanvas();
-                            app.sourceImageSelected=true;
+                            app.sourceImageSelected = true;
                         }
                         img.src = fr.result;
                     }
@@ -209,9 +227,19 @@ var app = new Vue({
                 }
             }
         },
+        adjustContrast: function () {
+            var c = document.getElementById('source');
+            let ctx = c.getContext("2d");
+            var imageData = ctx.getImageData(0, 0, c.width, c.height);
+            contrastImage(imageData, this.contrast);
+            ctx.putImageData(imageData, 0, 0);
+            resetExam();
+        },
+        //екзамен
         exam: function () {
             fullExam(this.items, this.method);
         },
+        //закладки
         isActive(menuItem) {
             return this.activeItem === menuItem
         },
@@ -235,7 +263,6 @@ var app = new Vue({
             let last_mousey = -1;
             let mousex = -1;
             let mousey = -1;
-            let mousedown = false;
 
             //Mousedowjn
             canvas.onmousedown = (ev) => {
@@ -415,7 +442,6 @@ function ExamArea(exItem, items) {
     var maxf = -1;
 
     var retVal = -1;
-    var maxDistanse = 50; //TODO
     var delta = +app.optimalDelta;
     let result = -1;
 

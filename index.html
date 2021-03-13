@@ -46,6 +46,10 @@
             <label for="delta">Frame size {{ frameSize }}</label>
             <input type="range" step="25" min="25" max="100" class="slider" id="frameSize" v-model="frameSize" :disabled="sourceImageSelected">
           </div>
+          <div class="slidecontainer">
+            <label for="contrast">Contrast {{ contrast }}</label>
+            <input type="range" step="1" min="0" max="100" class="slider" id="contrast" v-model="contrast" @change="adjustContrast">
+          </div>
           <input class="mb-2" type="file" id="addMap" @change="addMap">
           <div id="preview">
           </div>

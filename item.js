@@ -100,7 +100,7 @@ class trainingResult {
     constructor() {
 
         this.neighbour = -1;            //індекс класу сусіда
-        this.distanceToNeighbour =50;   //відстань до сусіда;
+        this.distanceToNeighbour =0;   //відстань до сусіда;
         this.maxKFE = -1;
         this.no_rab_obl_max_KFE = 0;
         this.radius = 0;
