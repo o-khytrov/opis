@@ -85,7 +85,7 @@ function calculateRadius(items, delta) {
                 trainingResult.no_rab_obl_dostovirn_D1 = td1;
                 trainingResult.no_rab_pomylka_betta = tbetta;;
             }
-            if (td1 >= 0.5 && tbetta < 0.5 && c < trainingResult.distanceToNeighbour) {
+            if (td1 >= 0.5 && tbetta < 0.5) {
                 if (kfe > trainingResult.maxKFE) {
                     trainingResult.maxKFE = kfe;
                     trainingResult.radius = c;
@@ -132,6 +132,34 @@ function contrastImage(imageData, contrast) {  // contrast as an integer percent
     return imageData;  //optional (e.g. for filter function chaining)
 }
 
+//визначення оптимального значення delta
+function optimizeDelta(items) {
+    let emAvg = -1;
+    let optimalDelta = 0;
+    let maxEm = 0;
+    for (let delta = 0; delta < items[0].trainingResults.length; delta++) {
+        items.forEach(item => {
+            if (item.trainingResults[delta].radius == -1)
+                emAvg += item.trainingResults[delta].no_rab_obl_dostovirn_D1;
+            else
+                emAvg += item.trainingResults[delta].maxKFE;
+        });
+
+        emAvg = emAvg / items.length;
+        if (emAvg > maxEm) {
+            maxEm = emAvg;
+            optimalDelta = delta;
+        }
+    }
+    //перебудова бінарних матриць і еталонних векторів з оптимальним значенням delta
+    items.forEach(item => {
+        item.calculateCenter(optimalDelta);
+        item.buildBinaryMatrix(optimalDelta);
+    });
+    return { maxEm, optimalDelta };
+
+}
+
 //Інтерфейс програми
 var app = new Vue({
 
@@ -166,37 +194,18 @@ var app = new Vue({
         train: function () {
             this.trainingComlete = false;
             for (let delta = 0; delta < this.delta; delta++) {
-                for (var i = 0; i < this.items.length; i++) {
-                    this.items[i].calculateCenter(delta);
-                    this.items[i].buildBinaryMatrix(delta)
-                }
+                this.items.forEach(item => {
+                    item.calculateCenter(delta);
+                    item.buildBinaryMatrix(delta);
+
+                });
                 caclulateDistanceToNeighbours(this.items, delta);
                 calculateRadius(this.items, delta);
             }
 
-            //визначення оптимального значення delta
-            var emAvg = 0;
-            for (let delta = 0; delta < this.delta; delta++) {
-                this.items.forEach(item => {
-                    if (item.trainingResults[delta].radius == 0)
-                        emAvg += item.trainingResults[delta].no_rab_obl_dostovirn_D1;
-                    else
-                        emAvg += item.trainingResults[delta].maxKFE;
-                });
-
-                emAvg = Math.round(emAvg / this.items.length);
-                if (emAvg > this.maxEm) {
-                    this.maxEm = emAvg;
-                    this.optimalDelta = delta;
-                }
-            }
-
-            //перебудова бінарних матриць і еталонних векторів з оптимальним значенням delta
-            this.items.forEach(item => {
-                item.calculateCenter(this.optimalDelta);
-                item.buildBinaryMatrix(this.optimalDelta);
-            });
-
+            var optimizationResult = optimizeDelta(this.items);
+            this.maxEm= optimizationResult.maxEm;
+            this.optimalDelta = optimizationResult.optimalDelta;
             this.trainingComlete = true;
         },
         //вибір базового зображення
@@ -439,8 +448,8 @@ function getAreaItem(matrix, startRow, startCol, distance) {
 
 //Екзамен
 function ExamArea(exItem, items) {
-    var maxf = -1;
 
+    var maxf = -1;
     var retVal = -1;
     var delta = +app.optimalDelta;
     let result = -1;
@@ -457,7 +466,6 @@ function ExamArea(exItem, items) {
             maxf = result;
             retVal = rclas;
         }
-
     }
 
     return retVal;
