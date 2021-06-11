@@ -44,11 +44,13 @@
         <div class="tab-pane fade" :class="{ 'active show': isActive('setup')}" id="setup">
           <div class="slidecontainer">
             <label for="delta">Frame size {{ frameSize }}</label>
-            <input type="range" step="25" min="25" max="100" class="slider" id="frameSize" v-model="frameSize" :disabled="sourceImageSelected">
+            <input type="range" step="25" min="25" max="100" class="slider" id="frameSize" v-model="frameSize"
+              :disabled="sourceImageSelected">
           </div>
           <div class="slidecontainer">
             <label for="contrast">Contrast {{ contrast }}</label>
-            <input type="range" step="1" min="0" max="100" class="slider" id="contrast" v-model="contrast" @change="adjustContrast">
+            <input type="range" step="1" min="0" max="100" class="slider" id="contrast" v-model="contrast"
+              @change="adjustContrast">
           </div>
           <input class="mb-2" type="file" id="addMap" @change="addMap">
           <div id="preview">
@@ -102,10 +104,21 @@
                   <label for="m_lum">Luminosity</label>
                 </div>
 
-                <div class="slidecontainer">
-                  <label for="delta">Delta {{ delta }}</label>
-                  <input type="range" min="-1" max="150" class="slider" id="delta" v-model="delta">
+                <div class="input-group mb-3">
+                  <input type="range" min="-1" max="150" class="form-control"  v-model="optimalDelta" @change="train" >
                 </div>
+                <div class="slidecontainer">
+                  <label for="delta">Delta optimization range {{ delta }}</label>
+                  <input type="range" min="-1" max="150" class="slider" id="delta" v-model="delta"
+                    :disabled="!deltaOptimization">
+                </div>
+
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="deltaOptimizationSwitch"
+                    v-model="deltaOptimization">
+                  <label class="form-check-label" for="deltaOptimizationSwitch">Опитімізація Delta</label>
+                </div>
+
                 <div>Optimal delta: {{optimalDelta}}</div>
                 <div>Max Em : {{maxEm}}</div>
               </div>
@@ -115,6 +128,9 @@
             <div class="mt-3" id="container">
               <div class="item-details" v-for="(item, index) in items">
                 <h3>{{item.name}}</h3>
+                <div v-if="item.maxEm > 0">Max EM {{ item.maxEm}}</div>
+                <div v-if="item.optimalDelta > 0">Optimal Delta {{ item.optimalDelta }}</div>
+
                 <button v-if="item.matrix.length"
                   @click="item.showMatrix=(!item.showMatrix)">{{item.showMatrix?'Hide':'Show'}} matrix</button>
                 <div v-if="item.showMatrix">
@@ -227,6 +243,7 @@
   </div>
   <script type="text/javascript" src="item.js"></script>
   <script type="text/javascript" src="script.js"></script>
+  <script type="text/javascript" src="image_vision.js"></script>
 </body>
 
 </html>

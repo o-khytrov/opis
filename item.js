@@ -2,6 +2,7 @@
 class item {
 
     constructor() {
+        this.index = 0;
         this.name = '';
         this.matrix = new Array();      //матриця зображення   
         this.center = new Array();      //центр контейнера класу розпізнавання
@@ -15,7 +16,8 @@ class item {
         this.showBinaryMatrix = false;
         this.showTrainingRes = false;
         this.showChart = false;
-
+        this.maxEm = 0;
+        this.optimalDelta = 0;
     }
     //створення матриці зображення з об'єкту canvas 
     buildMatrix = function (imageData, method) {
@@ -77,14 +79,48 @@ class item {
         }
         var colNumber = this.binMatrix[0].length;
         for (var c = 0; c < colNumber; c++) {
-            var sum = 0;
-            for (var r = 0; r < this.binMatrix.length; r++)
+            let sum = 0;
+            for (let r = 0; r < this.binMatrix.length; r++)
                 sum += this.binMatrix[r][c];
 
             this.etalon.push((sum / this.binMatrix.length) >= 0.5 ? 1 : 0);
         }
         this.distanceToNeighbour = this.etalon.length;
     }
+    renderBinaryImage = function(){
+        
+        var canvas = document.getElementById("bin_image_"+this.index);
+        console.log(canvas);
+        var ctx= canvas.getContext("2d");
+        let binaryImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        console.log(this.binMatrix);         
+        for (var by = 0; by < this.binMatrix.length; by++) {
+            for (var bx = 0; bx < this.binMatrix[by].length; bx++) {
+                var val = this.binMatrix[bx][by];
+                var color = {};
+                if (val == 0) {
+                    color = {
+                        R: 0,
+                        G: 0,
+                        B: 0,
+                        A: 255
+                    };
+                } else {
+                    color = {
+                        R: 255,
+                        G: 255,
+                        B: 255,
+                        A: 255
+                    };
+                }
+          
+                binaryImageData.setPixel(by, bx, color);
+
+            }
+        }
+        ctx.putImageData(binaryImageData, 0, 0);
+    }
+    
 }
 
 //структура для зберігання меж допусків

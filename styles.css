@@ -47,6 +47,8 @@ canvas {
 {
     display: block;
     margin-bottom: 3px;
+    float: left;
+    margin-right: 2px;
 }
 .item-name{
     margin-bottom: 3px;

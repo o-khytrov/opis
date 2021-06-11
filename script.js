@@ -23,7 +23,9 @@ function hemmingDistance(a, b) {
     var dist = 0;
     if (a.length != b.length) throw ("Invalid arguments");
     for (var o = 0; o < a.length; o++) {
-        if (a[o] != b[o]) { dist++; }
+        if (a[o] != b[o]) {
+            dist++;
+        }
     }
     return dist;
 }
@@ -50,7 +52,11 @@ function KFE(distance, c) {
     var tbetta = k2 / rowNumber;
     var d1b = td1 - tbetta;
     var kfe = d1b * Math.log((1 + d1b + 0.1) / (1 - d1b + 0.1)) / Math.log(2);
-    return { td1, tbetta, kfe };
+    return {
+        td1,
+        tbetta,
+        kfe
+    };
 }
 
 function calculateRadius(items, delta) {
@@ -58,7 +64,7 @@ function calculateRadius(items, delta) {
     items.forEach(currentItem => {
 
         let trainingResult = currentItem.trainingResults[delta];
-        var distance = new Array();//кодова відстань
+        var distance = new Array(); //кодова відстань
         distance.push(new Array());
         distance.push(new Array());
         for (var r = 0; r < currentItem.binMatrix.length; r++) {
@@ -117,19 +123,19 @@ function caclulateDistanceToNeighbours(items, delta) {
     }
 }
 
-function contrastImage(imageData, contrast) {  // contrast as an integer percent  
-    var data = imageData.data;  // original array modified, but canvas not updated
+function contrastImage(imageData, contrast) { // contrast as an integer percent  
+    var data = imageData.data; // original array modified, but canvas not updated
     contrast *= 2.55; // or *= 255 / 100; scale integer percent to full range
-    var factor = (255 + contrast) / (255.01 - contrast);  //add .1 to avoid /0 error
+    var factor = (255 + contrast) / (255.01 - contrast); //add .1 to avoid /0 error
 
-    for (var i = 0; i < data.length; i += 4)  //pixel values in 4-byte blocks (r,g,b,a)
+    for (var i = 0; i < data.length; i += 4) //pixel values in 4-byte blocks (r,g,b,a)
     {
-        data[i] = factor * (data[i] - 128) + 128;     //r value
+        data[i] = factor * (data[i] - 128) + 128; //r value
         data[i + 1] = factor * (data[i + 1] - 128) + 128; //g value
         data[i + 2] = factor * (data[i + 2] - 128) + 128; //b value
 
     }
-    return imageData;  //optional (e.g. for filter function chaining)
+    return imageData; //optional (e.g. for filter function chaining)
 }
 
 //визначення оптимального значення delta
@@ -141,8 +147,12 @@ function optimizeDelta(items) {
         items.forEach(item => {
             if (item.trainingResults[delta].radius == -1)
                 emAvg += item.trainingResults[delta].no_rab_obl_dostovirn_D1;
-            else
+            else {
                 emAvg += item.trainingResults[delta].maxKFE;
+                if (item.trainingResults[delta].maxKFE > item.maxEm) {
+                    item.maxEm = item.trainingResults[delta].maxKFE;
+                }
+            }
         });
 
         emAvg = emAvg / items.length;
@@ -155,8 +165,12 @@ function optimizeDelta(items) {
     items.forEach(item => {
         item.calculateCenter(optimalDelta);
         item.buildBinaryMatrix(optimalDelta);
+        item.renderBinaryImage();
     });
-    return { maxEm, optimalDelta };
+    return {
+        maxEm,
+        optimalDelta
+    };
 
 }
 
@@ -166,15 +180,16 @@ var app = new Vue({
     el: '#app',
     data: {
         activeItem: 'setup', // закладка
-        method: 'm_avg',        // алгоритм побудови матриці зображення
-        delta: 5,              // початкове значення Delta
-        items: [],              // массив класів розпізнавання
+        method: 'm_avg', // алгоритм побудови матриці зображення
+        delta: 5, // початкове значення Delta
+        items: [], // массив класів розпізнавання
         trainingComlete: false, // тренування завершене, система готова до екзамену
         frameSize: 50,
         optimalDelta: 0,
         maxEm: 0,
         sourceImageSelected: false, //базове зображення
-        contrast: 0
+        contrast: 0,
+        deltaOptimization: false
     },
     methods: {
         //побудова матриць
@@ -188,24 +203,40 @@ var app = new Vue({
                 i.reset();
                 i.trainingResults = new Array(this.delta);
                 i.buildMatrix(imageData, this.method);
+                i.renderBinaryImage();
             }
         },
         //навчання
         train: function () {
             this.trainingComlete = false;
-            for (let delta = 0; delta < this.delta; delta++) {
+            if (this.deltaOptimization) {
+                for (let delta = 0; delta < this.delta; delta++) {
+                    this.items.forEach(item => {
+                        item.calculateCenter(delta);
+                        item.buildBinaryMatrix(delta);
+
+                    });
+                    caclulateDistanceToNeighbours(this.items, delta);
+                    calculateRadius(this.items, delta);
+                }
+
+                var optimizationResult = optimizeDelta(this.items);
+                this.maxEm = optimizationResult.maxEm;
+                this.optimalDelta = optimizationResult.optimalDelta;
+            }
+            else
+            {
                 this.items.forEach(item => {
-                    item.calculateCenter(delta);
-                    item.buildBinaryMatrix(delta);
+                    item.calculateCenter(+this.optimalDelta);
+                    item.buildBinaryMatrix(+this.optimalDelta);
+                    item.renderBinaryImage();
 
                 });
-                caclulateDistanceToNeighbours(this.items, delta);
-                calculateRadius(this.items, delta);
+                caclulateDistanceToNeighbours(this.items, +this.optimalDelta);
+                calculateRadius(this.items, +this.optimalDelta);
+            
             }
 
-            var optimizationResult = optimizeDelta(this.items);
-            this.maxEm= optimizationResult.maxEm;
-            this.optimalDelta = optimizationResult.optimalDelta;
             this.trainingComlete = true;
         },
         //вибір базового зображення
@@ -283,7 +314,10 @@ var app = new Vue({
 
                 last_mousex = parseInt(clientX - canvasx);
                 last_mousey = parseInt(clientY - canvasy);
-                console.log({ last_mousex, last_mousey });
+                console.log({
+                    last_mousex,
+                    last_mousey
+                });
                 mousedown = true;
             };
 
@@ -305,6 +339,8 @@ var app = new Vue({
                 var sourceContext = sourceCanvas.getContext("2d");
                 var sourceImageData = sourceContext.getImageData(mousex - size / 2, mousey - size / 2, size, size);
 
+                var div = document.createElement("div");
+
                 var c = document.createElement("canvas");
                 c.className = "training";
                 c.width = app.frameSize;
@@ -313,6 +349,19 @@ var app = new Vue({
                 var context = c.getContext("2d");
                 context.putImageData(sourceImageData, 0, 0);
                 document.getElementById('training-set').appendChild(c);
+                div.appendChild(c);
+
+                c = document.createElement("canvas");
+                c.className = "training_bin";
+                c.setAttribute("id", "bin_image_"+this.items.length)
+                c.width = app.frameSize;
+                c.height = app.frameSize;
+
+                var context = c.getContext("2d");
+                context.putImageData(sourceImageData, 0, 0);
+                div.appendChild(c);
+
+                document.getElementById('training-set').appendChild(div);
 
                 var preview = document.createElement("canvas");
                 preview.className = "preview";
@@ -323,7 +372,9 @@ var app = new Vue({
                 var previewContext = preview.getContext("2d");
                 previewContext.putImageData(sourceImageData, 0, 0);
                 document.getElementById('preview').appendChild(preview);
-                app.items.push(new item());
+                var i = new item();
+                i.index = this.items.length;
+                app.items.push(i);
             }
 
             //Mousemove
@@ -351,8 +402,13 @@ var app = new Vue({
 })
 
 function fullExam(items, method) {
+    var results = [];
     let canvas = document.getElementById("ExamCanvas");
+
     let ctx = canvas.getContext("2d");
+    ctx.font = "9px serif ";
+    ctx.fillStyle = "#ff0000";
+
     let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
     var examItem = new item();
@@ -360,30 +416,87 @@ function fullExam(items, method) {
     var examMatrix = examItem.matrix;
     var step = +app.frameSize;
 
+
+    var binaryCanvas = document.getElementById("ExamBinaryCanvas");
+    var binaryCanvasCtx = binaryCanvas.getContext("2d");
+    var binaryImageData = binaryCanvasCtx.getImageData(0, 0, canvas.width, canvas.height);
+
+
+    //відображення сітки
     for (var x = 0; x < canvas.width; x += step)
         for (var y = 0; y < canvas.height; y++)
-            imageData.setPixel(x, y, { R: 255, G: 0, B: 0 });
+            imageData.setPixel(x, y, {
+                R: 255,
+                G: 0,
+                B: 0,
+            });
 
     for (var y = 0; y < canvas.height; y += step)
         for (var x = 0; x < canvas.width; x++)
-            imageData.setPixel(x, y, { R: 255, G: 0, B: 0 });
+            imageData.setPixel(x, y, {
+                R: 255,
+                G: 0,
+                B: 0
+            });
 
-    for (var r = 0; r < canvas.height; r += step)
+    var i = 0;
+    for (var r = 0; r < canvas.height; r += step) {
+        results[i] = [];
         for (var c = 0; c < canvas.width; c += step) {
-            var testArea = getAreaItem(examMatrix, r, c, step); var testResult = ExamArea(testArea, items);
-            if (testResult != -1) {
-                ctx.font = "8px Georgia";
-                ctx.fillText(testResult.name, r, c);
-                color = testResult.highlightColor;
-                highlightArea(imageData, r, c, step, color, 100);
+            var testArea = getAreaItem(examMatrix, r, c, step);
+            var testResult = ExamArea(testArea, items);
+
+            for (var by = 0; by < testArea.binMatrix.length; by++) {
+                for (var bx = 0; bx < testArea.binMatrix[by].length; bx++) {
+                    var val = testArea.binMatrix[bx][by];
+                    var color = {};
+                    if (val == 0) {
+                        color = {
+                            R: 0,
+                            G: 0,
+                            B: 0,
+                            A: 255
+                        };
+                    } else {
+                        color = {
+                            R: 255,
+                            G: 255,
+                            B: 255,
+                            A: 255
+                        };
+                    }
+
+                    binaryImageData.setPixel(by + c, bx + r, color);
+
+                }
             }
+            binaryCanvasCtx.putImageData(binaryImageData, 0, 0);
+            results[i].push(testResult);
+
         }
+        i++;
+    }
 
     ctx.putImageData(imageData, 0, 0);
+
+
+    for (var r = 0; r < results.length; r++) {
+        for (var c = 0; c < results[r].length; c++) {
+            var result = results[r][c];
+            var className = result == -1 ? "unknown" : result.name;
+
+            var x = c * step;
+            var y = r * step;
+
+            ctx.fillText(`${className}`, x + 5, y + 10);
+        }
+    }
+
 }
 
 function resetExam() {
     document.getElementById("ExamCanvas").outerHTML = "";
+    document.getElementById("ExamBinaryCanvas").outerHTML = "";
     initExamCanvas();
 }
 
@@ -399,6 +512,16 @@ function initExamCanvas() {
     var examCtx = examCanvas.getContext('2d');
     examCtx.putImageData(sourceImageData, 0, 0);
     document.getElementById('exam').appendChild(examCanvas);
+
+
+
+    var examBinaryCanvas = document.createElement('canvas');
+    examBinaryCanvas.setAttribute("id", "ExamBinaryCanvas");
+    examBinaryCanvas.width = sourceCanvas.width;
+    examBinaryCanvas.height = sourceCanvas.height;
+    var examCtx = examBinaryCanvas.getContext('2d');
+    examCtx.putImageData(sourceImageData, 0, 0);
+    document.getElementById('exam').appendChild(examBinaryCanvas);
 }
 
 //підсвітка ділянки зображення
@@ -470,9 +593,38 @@ function ExamArea(exItem, items) {
 
     return retVal;
 }
+
+
 function download(e) {
     var link = document.createElement("a");
     link.download = "image.bmp";
     link.href = e.target.toDataURL("image/bmp").replace("image/bmp", "image/octet-stream");
     link.click();
+}
+
+
+function otsu(histogram, pixelsNumber) {
+    var sum = 0,
+        sumB = 0,
+        wB = 0,
+        wF = 0,
+        mB, mF, max = 0,
+        between, threshold = 0;
+    for (var i = 0; i < 256; ++i) {
+        wB += histogram[i];
+        if (wB == 0)
+            continue;
+        wF = pixelsNumber - wB;
+        if (wF == 0)
+            break;
+        sumB += i * histogram[i];
+        mB = sumB / wB;
+        mF = (sum - sumB) / wF;
+        between = wB * wF * Math.pow(mB - mF, 2);
+        if (between > max) {
+            max = between;
+            threshold = i;
+        }
+    }
+    return threshold;
 }
