@@ -47,11 +47,6 @@
             <input type="range" step="25" min="25" max="100" class="slider" id="frameSize" v-model="frameSize"
               :disabled="sourceImageSelected">
           </div>
-          <div class="slidecontainer">
-            <label for="contrast">Contrast {{ contrast }}</label>
-            <input type="range" step="1" min="0" max="100" class="slider" id="contrast" v-model="contrast"
-              @change="adjustContrast">
-          </div>
           <input class="mb-2" type="file" id="addMap" @change="addMap">
           <div id="preview">
           </div>
@@ -103,9 +98,13 @@
                   <input type="radio" id="m_lum" name="method" value="m_lum" v-model="method">
                   <label for="m_lum">Luminosity</label>
                 </div>
+                <div>
+                  <input type="radio" id="m_grayscale" name="method" value="m_grayscale" v-model="method">
+                  <label for="m_grayscale">Weighted grayscale</label>
+                </div>
 
                 <div class="input-group mb-3">
-                  <input type="range" min="-1" max="150" class="form-control"  v-model="optimalDelta" @change="train" >
+                  <input type="range" min="-1" max="150" class="form-control" v-model="optimalDelta" @change="train">
                 </div>
                 <div class="slidecontainer">
                   <label for="delta">Delta optimization range {{ delta }}</label>
@@ -200,9 +199,10 @@
                         <th>neighbour </th>
                         <th>distanse to neighbour</th>
                         <th>radius</th>
+                        <th>no_rab_obl_max_KFE</th>
                         <th>no_rab_obl_Radius</th>
                         <th>no_rab_obl_dostovirn_D1</th>
-                        <th>betta error</th>
+                        <th>no_rab_pomylka_betta</th>
                         <th>dostovirn_D1</th>
                         <th>maxKFE</th>
                       </tr>
@@ -213,19 +213,25 @@
                         <td>{{items[result.neighbour].name}}</td>
                         <td>{{result.distanceToNeighbour}}</td>
                         <td>{{result.radius}}</td>
+                        <td>{{result.no_rab_obl_max_KFE}}</td>
                         <td>{{result.no_rab_obl_Radius}}</td>
                         <td>{{result.no_rab_obl_dostovirn_D1}}</td>
                         <td>{{result.no_rab_pomylka_betta}}</td>
-                        <td>{{result.no_rab_pomylka_betta}}</td>
+                        <td>{{result.dostovirn_D1}}</td>
                         <td>{{result.maxKFE}}</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
-                <button v-if="trainingComlete" @click="item.showChart=(!item.showChart)">{{item.showChart?
-                  'Hide':'Show'}} chart</button>
-                <div v-if="item.showChart">
-                  <line-chart :chartdata="item.trainingResults"></line-chart>
+                <button v-if="trainingComlete" @click="item.showRadiusChart=(!item.showRadiusChart)">{{item.showRadiusChart?
+                  'Hide':'Show'}} KFE Radius chart</button>
+                <div v-if="item.showRadiusChart">
+                  <kfe-radius-chart :chartdata="item.trainingResults"></kfe-radius-chart>
+                </div>
+                <button v-if="trainingComlete" @click="item.showDeltaChart=(!item.showDeltaChart)">{{item.showDeltaChart?
+                  'Hide':'Show'}} KFE Delta chart</button>
+                <div v-if="item.showDeltaChart">
+                  <kfe-delta-chart :chartdata="item.trainingResults"></kfe-delta-chart>
                 </div>
               </div>
             </div>

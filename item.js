@@ -4,18 +4,19 @@ class item {
     constructor() {
         this.index = 0;
         this.name = '';
-        this.matrix = new Array();      //матриця зображення   
-        this.center = new Array();      //центр контейнера класу розпізнавання
-        this.tolerance = new Array();   //массив структур tollerance, (нижня і верхня межа допуску)
-        this.binMatrix = new Array();   //бінатрна матриця
-        this.etalon = new Array();      //еталонний вектор класу
+        this.matrix = new Array(); //матриця зображення   
+        this.center = new Array(); //центр контейнера класу розпізнавання
+        this.tolerance = new Array(); //массив структур tollerance, (нижня і верхня межа допуску)
+        this.binMatrix = new Array(); //бінатрна матриця
+        this.etalon = new Array(); //еталонний вектор класу
         this.trainingResults = new Array();
 
-        this.highlightColor = '';        //колір підсвітки на екзамені
+        this.highlightColor = ''; //колір підсвітки на екзамені
         this.showMatrix = false;
         this.showBinaryMatrix = false;
         this.showTrainingRes = false;
-        this.showChart = false;
+        this.showRadiusChart = false;
+        this.showDeltaChart = false;
         this.maxEm = 0;
         this.optimalDelta = 0;
     }
@@ -38,17 +39,30 @@ class item {
                     this.matrix[y].push(pixel.B)
                 else if (method == 'm_lum')
                     this.matrix[y].push(luminosity(pixel));
+                else if (method == 'm_grayscale')
+                    this.matrix[y].push(weighted_grayscale(pixel));
             }
         }
-    }
 
+    }
+    calculateHistogram = function () {
+        this.histogram = new Int16Array(256);
+        var i = 0;
+        for (var c = 0; c < this.matrix.length; c++) {
+            for (var r = 0; r < this.matrix[c].length; r++) {
+                var value = this.matrix[r][c];
+                this.histogram[value] += 1;
+            }
+
+        }
+    }
     reset = function () {
         this.matrix = Array();
         this.binMatrix = new Array();
         this.etalon = new Array();
         this.tolerance = new Array();
         this.center = new Array();
-        this.trainingResults= new Array();
+        this.trainingResults = new Array();
     }
     // визначення центру 
     calculateCenter = function (delta) {
@@ -74,7 +88,8 @@ class item {
             this.binMatrix.push(new Array());
             for (var c = 0; c < this.matrix[r].length; c++) {
                 var tolerance = this.tolerance[c];
-                this.binMatrix[r][c] = (this.matrix[r][c] >= tolerance.bottom && this.matrix[r][c] <= tolerance.top) ? 1 : 0;
+                this.binMatrix[r][c] = (this.matrix[r][c] >= tolerance.bottom &&
+                    this.matrix[r][c] <= tolerance.top) ? 1 : 0;
             }
         }
         var colNumber = this.binMatrix[0].length;
@@ -87,13 +102,13 @@ class item {
         }
         this.distanceToNeighbour = this.etalon.length;
     }
-    renderBinaryImage = function(){
-        
-        var canvas = document.getElementById("bin_image_"+this.index);
+    renderBinaryImage = function () {
+
+        var canvas = document.getElementById("bin_image_" + this.index);
         console.log(canvas);
-        var ctx= canvas.getContext("2d");
+        var ctx = canvas.getContext("2d");
         let binaryImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        console.log(this.binMatrix);         
+        console.log(this.binMatrix);
         for (var by = 0; by < this.binMatrix.length; by++) {
             for (var bx = 0; bx < this.binMatrix[by].length; bx++) {
                 var val = this.binMatrix[bx][by];
@@ -113,14 +128,45 @@ class item {
                         A: 255
                     };
                 }
-          
                 binaryImageData.setPixel(by, bx, color);
-
             }
         }
         ctx.putImageData(binaryImageData, 0, 0);
     }
-    
+    renderHistogram = function (histogram, threshold) {
+        var divClass = '#training_class_' + this.index;
+        var histograms = document.querySelectorAll(divClass);
+        var fragment = document.createDocumentFragment();
+        var max = 0;
+        var height = histograms[0].clientHeight;
+
+        for (var i = 0; i < histogram.length; i++) {
+            if (histogram[i] > max)
+                max = histogram[i];
+        }
+
+        for (var i = 0; i < histogram.length; i++) {
+            var column = document.createElement('div');
+            column.style.height = height / max * histogram[i] + "px";
+            fragment.appendChild(column);
+        }
+
+        var thresholdLine = document.createElement('div');
+        thresholdLine.className = 'threshold';
+        thresholdLine.style.left = threshold / 255 * 100 + "%";
+        fragment.appendChild(thresholdLine);
+
+        while (histograms[0].firstChild)
+            histograms[0].removeChild(histograms[0].firstChild);
+
+        histograms[0].appendChild(fragment);
+
+        // potentially clone the histogram
+        for (var i = 1; i < histograms.length; i++) {
+            histograms[i].innerHTML = histograms[0].innerHTML;
+        }
+    }
+
 }
 
 //структура для зберігання меж допусків
@@ -135,9 +181,9 @@ class tolerance {
 class trainingResult {
     constructor() {
 
-        this.neighbour = -1;            //індекс класу сусіда
-        this.distanceToNeighbour =0;   //відстань до сусіда;
-        this.maxKFE = -1;
+        this.neighbour = -1; //індекс класу сусіда
+        this.distanceToNeighbour = 0; //відстань до сусіда;
+        this.maxKFE = 0;
         this.no_rab_obl_max_KFE = -1;
         this.radius = 0;
         this.no_rab_obl_Radius = 0;
@@ -146,8 +192,8 @@ class trainingResult {
         this.dostovirn_D1 = 0;
     }
 }
-
-Vue.component('line-chart', {
+//графік залежності критерію Кульбака від радіусів контейнеру
+Vue.component('kfe-radius-chart', {
     extends: VueChartJs.Line,
     props: {
         chartdata: {
@@ -157,25 +203,106 @@ Vue.component('line-chart', {
     },
     mounted() {
         let data = {
-            labels: new Array(), datasets: [
-                { label: 'Radius', data: new Array() },
-                //{ label: 'Delta', data: new Array() },
+            labels: new Array(),
+            datasets: [{
+                    label: 'Залежність критерію Кульбака від радіусів контейнеру',
+                    data: new Array()
+                },
+                {
+                    label: 'Робоча область',
+                    data: new Array(),
+                    backgroundColor: '#f87979'
+                }
             ]
         };
+        const sortedChartData = this.chartdata.concat().sort((a, b) => {
+            if (a.radius < b.radius) return -1;
+            return 1;
+        });
+        for (let i = 0; i < sortedChartData.length; i++) {
+            var kfe = Math.max(sortedChartData[i].maxKFE, sortedChartData[i].no_rab_obl_max_KFE);
+            
+            data.datasets[0].data.push(kfe);
+            data.labels.push(sortedChartData[i].radius);
 
-        for (let i = 0; i < this.chartdata.length; i++) {
-            data.datasets[0].data.push(this.chartdata[i].maxKFE);
-            //data.datasets[1].data.push(i);
-            data.labels.push(this.chartdata[i].radius);
+            if (this.chartdata[i].dostovirn_D1 > sortedChartData[i].no_rab_pomylka_betta)
+                data.datasets[1].data.push(kfe);
+            else
+                data.datasets[1].data.push(0);
+
+
         }
         this.renderChart(data, {
-            responsive: true, maintainAspectRatio: false, scales: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
                 yAxes: [{
-                    scaleLabel: { display: true, labelString: "Iнформаційна міра" }
+                    scaleLabel: {
+                        display: true,
+                        labelString: "Iнформаційна міра"
+                    }
                 }],
                 xAxes: [{
                     //scaleLabel: { display: true, labelString: "Радіус" },
-                    scaleLabel: { display: true, labelString: "Delta" }
+                    scaleLabel: {
+                        display: true,
+                        labelString: "Radius"
+                    }
+                }]
+            }
+        })
+    }
+
+})
+
+//графік залежності критерію Кульбака від delta
+Vue.component('kfe-delta-chart', {
+    extends: VueChartJs.Line,
+    props: {
+        chartdata: {
+            type: Array,
+            default: null
+        }
+    },
+    mounted() {
+        let data = {
+            labels: new Array(),
+            datasets: [{
+                    label: 'Залежність критерію Кульбака від значення delta',
+                    data: new Array()
+                },
+                {
+                    label: 'Робоча область',
+                    data: new Array(),
+                    backgroundColor: '#f87979'
+                }
+            ]
+        };
+        for (let i = 0; i < this.chartdata.length; i++) {
+            data.datasets[0].data.push(Math.max(this.chartdata[i].maxKFE, this.chartdata[i].no_rab_obl_max_KFE));
+            data.labels.push(this.chartdata[i].delta);
+            if (this.chartdata[i].dostovirn_D1 > this.chartdata[i].no_rab_pomylka_betta)
+                data.datasets[1].data.push(this.chartdata[i].maxKFE);
+            else
+                data.datasets[1].data.push(0);
+
+        }
+        this.renderChart(data, {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                yAxes: [{
+                    scaleLabel: {
+                        display: true,
+                        labelString: "Iнформаційна міра"
+                    }
+                }],
+                xAxes: [{
+                    //scaleLabel: { display: true, labelString: "Радіус" },
+                    scaleLabel: {
+                        display: true,
+                        labelString: "Deta"
+                    }
                 }]
             }
         })

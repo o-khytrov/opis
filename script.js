@@ -39,17 +39,22 @@ function luminosity(pixel) {
     return Math.round(0.21 * pixel.R + 0.72 * pixel.G + 0.07 * pixel.B);
 }
 
+function weighted_grayscale(pixel) {
+    return Math.round(pixel.R * 0.299 + pixel.G * 0.587 + pixel.B * 0.114);
+}
 //Критерій Кульбака
 function KFE(distance, c) {
-    var k1 = 0;
-    var k2 = 0;
+    var own = 0; //кількість "своїх"
+    var foreign = 0; //кількість "чужих" 
+
     var rowNumber = distance[0].length;
+
     for (var r = 0; r < rowNumber; r++) {
-        if (distance[0][r] <= c) k1++;
-        if (distance[1][r] <= c) k2++;
+        if (distance[0][r] <= c) own++;
+        if (distance[1][r] <= c) foreign++;
     }
-    var td1 = k1 / rowNumber;
-    var tbetta = k2 / rowNumber;
+    var td1 = own / rowNumber;
+    var tbetta = foreign / rowNumber;
     var d1b = td1 - tbetta;
     var kfe = d1b * Math.log((1 + d1b + 0.1) / (1 - d1b + 0.1)) / Math.log(2);
     return {
@@ -72,8 +77,8 @@ function calculateRadius(items, delta) {
             distance[1][r] = 0;
             for (var c = 0; c < currentItem.binMatrix[r].length; c++) {
 
-                distance[0][r] += Math.abs(currentItem.etalon[c] - currentItem.binMatrix[c][r]);
-                distance[1][r] += Math.abs(currentItem.etalon[c] - items[trainingResult.neighbour].binMatrix[c][r]);
+                distance[0][r] += Math.abs(currentItem.etalon[c] - currentItem.binMatrix[r][c]);
+                distance[1][r] += Math.abs(currentItem.etalon[c] - items[trainingResult.neighbour].binMatrix[r][c]);
 
             }
         }
@@ -108,6 +113,7 @@ function caclulateDistanceToNeighbours(items, delta) {
     for (var i = 0; i < items.length; i++) {
         var currentItem = items[i];
         let result = new trainingResult();
+        result.delta = delta;
         result.distanceToNeighbour = currentItem.etalon.length;
         for (var j = 0; j < items.length; j++) {
             if (i == j) continue;
@@ -171,7 +177,6 @@ function optimizeDelta(items) {
         maxEm,
         optimalDelta
     };
-
 }
 
 //Інтерфейс програми
@@ -181,7 +186,7 @@ var app = new Vue({
     data: {
         activeItem: 'setup', // закладка
         method: 'm_avg', // алгоритм побудови матриці зображення
-        delta: 5, // початкове значення Delta
+        delta: 20, // початкове значення Delta
         items: [], // массив класів розпізнавання
         trainingComlete: false, // тренування завершене, система готова до екзамену
         frameSize: 50,
@@ -189,7 +194,7 @@ var app = new Vue({
         maxEm: 0,
         sourceImageSelected: false, //базове зображення
         contrast: 0,
-        deltaOptimization: false
+        deltaOptimization: true
     },
     methods: {
         //побудова матриць
@@ -223,9 +228,7 @@ var app = new Vue({
                 var optimizationResult = optimizeDelta(this.items);
                 this.maxEm = optimizationResult.maxEm;
                 this.optimalDelta = optimizationResult.optimalDelta;
-            }
-            else
-            {
+            } else {
                 this.items.forEach(item => {
                     item.calculateCenter(+this.optimalDelta);
                     item.buildBinaryMatrix(+this.optimalDelta);
@@ -234,7 +237,7 @@ var app = new Vue({
                 });
                 caclulateDistanceToNeighbours(this.items, +this.optimalDelta);
                 calculateRadius(this.items, +this.optimalDelta);
-            
+
             }
 
             this.trainingComlete = true;
@@ -266,14 +269,6 @@ var app = new Vue({
                     fr.readAsDataURL(event.target.files[i]);
                 }
             }
-        },
-        adjustContrast: function () {
-            var c = document.getElementById('source');
-            let ctx = c.getContext("2d");
-            var imageData = ctx.getImageData(0, 0, c.width, c.height);
-            contrastImage(imageData, this.contrast);
-            ctx.putImageData(imageData, 0, 0);
-            resetExam();
         },
         //екзамен
         exam: function () {
@@ -340,7 +335,7 @@ var app = new Vue({
                 var sourceImageData = sourceContext.getImageData(mousex - size / 2, mousey - size / 2, size, size);
 
                 var div = document.createElement("div");
-
+                div.setAttribute("id", "training_class_" + this.items.length)
                 var c = document.createElement("canvas");
                 c.className = "training";
                 c.width = app.frameSize;
@@ -353,7 +348,7 @@ var app = new Vue({
 
                 c = document.createElement("canvas");
                 c.className = "training_bin";
-                c.setAttribute("id", "bin_image_"+this.items.length)
+                c.setAttribute("id", "bin_image_" + this.items.length)
                 c.width = app.frameSize;
                 c.height = app.frameSize;
 
@@ -378,28 +373,29 @@ var app = new Vue({
             }
 
             //Mousemove
-            canvas.onmousemove = (ev) => {
-
-                let canvasx = ev.target.offsetLeft;
-                let canvasy = ev.target.offsetTop;
-                let clientX = ev.pageX;
-                let clientY = ev.pageY;
-
-                mousex = parseInt(clientX - canvasx);
-                mousey = parseInt(clientY - canvasy);
-                let size = app.frameSize;
-                ctx.clearRect(-1, 0, canvas.width, canvas.height); //clear canvas
-                ctx.beginPath();
-                ctx.rect(mousex - size / 2, mousey - size / 2, size, size);
-                ctx.strokeStyle = 'red';
-                ctx.lineWidth = 1;
-                ctx.stroke();
-
-            };
+            canvas.onmousemove = draw_box;
 
         }
     }
 })
+
+function draw_box(ev) {
+
+    let canvasx = ev.target.offsetLeft;
+    let canvasy = ev.target.offsetTop;
+    let clientX = ev.pageX;
+    let clientY = ev.pageY;
+
+    mousex = parseInt(clientX - canvasx);
+    mousey = parseInt(clientY - canvasy);
+    let size = app.frameSize;
+    ctx.clearRect(-1, 0, canvas.width, canvas.height); //clear canvas
+    ctx.beginPath();
+    ctx.rect(mousex - size / 2, mousey - size / 2, size, size);
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+}
 
 function fullExam(items, method) {
     var results = [];
@@ -576,13 +572,22 @@ function ExamArea(exItem, items) {
     var retVal = -1;
     var delta = +app.optimalDelta;
     let result = -1;
+    console.log();
+    console.log();
 
     for (var i = 0; i < items.length; i++) {
         var rclas = items[i];
+
+        console.log(`Testing ${rclas.name}`);
+        console.log(exItem.etalon.join(''));
+        console.log(rclas.etalon.join(''));
+
         var distance = hemmingDistance(exItem.etalon, rclas.etalon);
+        var radius = rclas.trainingResults[delta].radius;
+        result = 1 - distance / radius;
+
         console.log(`distance to ${rclas.name}: ${distance}`);
-        result = 1 - distance / rclas.trainingResults[delta].radius;
-        console.log(`result: ${result}`);
+        console.log(`result: ${distance}/${radius} = ${result}`);
 
         if (maxf < result && result >= 0) {
             console.log(`this is ${rclas.name}`);
@@ -592,39 +597,4 @@ function ExamArea(exItem, items) {
     }
 
     return retVal;
-}
-
-
-function download(e) {
-    var link = document.createElement("a");
-    link.download = "image.bmp";
-    link.href = e.target.toDataURL("image/bmp").replace("image/bmp", "image/octet-stream");
-    link.click();
-}
-
-
-function otsu(histogram, pixelsNumber) {
-    var sum = 0,
-        sumB = 0,
-        wB = 0,
-        wF = 0,
-        mB, mF, max = 0,
-        between, threshold = 0;
-    for (var i = 0; i < 256; ++i) {
-        wB += histogram[i];
-        if (wB == 0)
-            continue;
-        wF = pixelsNumber - wB;
-        if (wF == 0)
-            break;
-        sumB += i * histogram[i];
-        mB = sumB / wB;
-        mF = (sum - sumB) / wF;
-        between = wB * wF * Math.pow(mB - mF, 2);
-        if (between > max) {
-            max = between;
-            threshold = i;
-        }
-    }
-    return threshold;
 }
