@@ -61,12 +61,12 @@
                 <div id="training-set">
                 </div>
               </div>
-              <div class="col-2">
+              <div class="col-4">
                 <div class="item-name" v-for="(item,index) in items" v-bind:style="{ height: (+frameSize+2) + 'px' }">
                   <input type="text" v-model="items[index].name">
                 </div>
               </div>
-              <div class="col-2">
+              <!-- <div class="col-2">
                 <div class="item-name" v-for="(item,index) in items" v-bind:style="{ height: (+frameSize+2) + 'px' }">
                   <select type="text" v-model="items[index].highlightColor">
                     <option style="color:green;" value="green">green</option>
@@ -74,7 +74,7 @@
                     <option style="color: yellow;" value="yellow">yelllow</option>
                   </select>
                 </div>
-              </div>
+              </div> -->
               <div class="col-6">
                 <p>Select matrix method:</p>
                 <div>
@@ -103,28 +103,30 @@
                   <label for="m_grayscale">Weighted grayscale</label>
                 </div>
 
-                <div class="input-group mb-3">
-                  <input type="range" min="-1" max="150" class="form-control" v-model="optimalDelta" @change="train">
+                <div class="slidecontainer mt-3 mb-2">
+                  <label for="optimalDelta">Delta {{ optimalDelta }}</label>
+                  <input type="range" min="1" max="150" class="slider" id="optimalDelta" v-model="optimalDelta"
+                    @change="train" :disabled="deltaOptimization">
                 </div>
-                <div class="slidecontainer">
-                  <label for="delta">Delta optimization range {{ delta }}</label>
-                  <input type="range" min="-1" max="150" class="slider" id="delta" v-model="delta"
-                    :disabled="!deltaOptimization">
-                </div>
-
                 <div class="form-check form-switch">
                   <input class="form-check-input" type="checkbox" id="deltaOptimizationSwitch"
                     v-model="deltaOptimization">
                   <label class="form-check-label" for="deltaOptimizationSwitch">Опитімізація Delta</label>
                 </div>
+                <div class="slidecontainer">
+                  <label for="delta">Delta optimization range {{ delta }}</label>
+                  <input type="range" min="1" max="150" class="slider" id="delta" v-model="delta"
+                    :disabled="!deltaOptimization">
+                </div>
 
-                <div>Optimal delta: {{optimalDelta}}</div>
-                <div>Max Em : {{maxEm}}</div>
+              
               </div>
             </div>
             <button id="btnBuild" class="btn btn-primary" v-on:click="buildMatrix">Build matrix</button>
             <button id="btnTrain" class="btn btn-primary" v-on:click="train">Training</button>
             <div class="mt-3" id="container">
+              <div>Optimal delta: {{optimalDelta}}</div>
+              <div>Max Em : {{maxEm}}</div>
               <div class="item-details" v-for="(item, index) in items">
                 <h3>{{item.name}}</h3>
                 <div v-if="item.maxEm > 0">Max EM {{ item.maxEm}}</div>
@@ -223,12 +225,14 @@
                     </tbody>
                   </table>
                 </div>
-                <button v-if="trainingComlete" @click="item.showRadiusChart=(!item.showRadiusChart)">{{item.showRadiusChart?
+                <button v-if="trainingComlete"
+                  @click="item.showRadiusChart=(!item.showRadiusChart)">{{item.showRadiusChart?
                   'Hide':'Show'}} KFE Radius chart</button>
                 <div v-if="item.showRadiusChart">
                   <kfe-radius-chart :chartdata="item.trainingResults"></kfe-radius-chart>
                 </div>
-                <button v-if="trainingComlete" @click="item.showDeltaChart=(!item.showDeltaChart)">{{item.showDeltaChart?
+                <button v-if="trainingComlete"
+                  @click="item.showDeltaChart=(!item.showDeltaChart)">{{item.showDeltaChart?
                   'Hide':'Show'}} KFE Delta chart</button>
                 <div v-if="item.showDeltaChart">
                   <kfe-delta-chart :chartdata="item.trainingResults"></kfe-delta-chart>
@@ -242,14 +246,14 @@
             <button class="btn btn-primary mb-3" v-on:click="exam" :disabled="!trainingComlete">Run exam</button>
             <button class="btn btn-danger mb-3" v-on:click="reset" :disabled="!trainingComlete">Reset exam</button>
           </div>
-
+          <div id="exam_frames" class="row"></div>
+          <div id=exam_image_container></div>
         </div>
       </div>
     </div>
   </div>
   <script type="text/javascript" src="item.js"></script>
   <script type="text/javascript" src="script.js"></script>
-  <script type="text/javascript" src="image_vision.js"></script>
 </body>
 
 </html>

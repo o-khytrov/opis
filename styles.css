@@ -1,66 +1,79 @@
 body {
     padding: 20px 0;
-  }
-table.matrix{
-    border-collapse: collapse;
-    font-size: 0.75rem;
-    table-layout:fixed;
 }
 
-table.matrix, th, td {
+table.matrix {
+    border-collapse: collapse;
+    font-size: 0.75rem;
+    table-layout: fixed;
+}
+
+table.matrix,
+th,
+td {
     border: 1px solid black;
     text-align: center;
     width: 25px;
     overflow: hidden;
     text-overflow: ellipsis;
-    
-  }
-.highlight{
+
+}
+
+.highlight {
     background-color: yellow;
 }
-.slider{
+
+.slider {
     width: 600px;
 }
 
-.etalon{
+.etalon {
     background-color: springgreen;
 }
 
-.preview{
+.preview {
     cursor: pointer;
 }
 
-#overlay{
+.overlay {
     cursor: crosshair;
+    margin-left: 15px;
+    position: absolute;
+    left: 0;
 }
 
 canvas {
-  border: 1px solid #000000;
-}
-#overlay, #source {
- margin-left: 15px;
- position: absolute;
- left: 0;
+    border: 1px solid #000000;
 }
 
-.training
-{
+
+#source {
+    margin-left: 15px;
+    position: absolute;
+    left: 0;
+}
+
+.training {
     display: block;
     margin-bottom: 3px;
     float: left;
     margin-right: 2px;
 }
-.item-name{
+
+.item-name {
     margin-bottom: 3px;
 }
-.item-name input{
+
+.item-name input {
     height: 50%;
     margin: auto;
 }
-.black{
+
+.black {
     color: white;
     background-color: black;
 }
-.legend{
+
+.legend {
     background-color: lightblue;
 }

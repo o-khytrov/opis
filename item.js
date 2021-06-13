@@ -216,14 +216,14 @@ Vue.component('kfe-radius-chart', {
             ]
         };
         const sortedChartData = this.chartdata.concat().sort((a, b) => {
-            if (a.radius < b.radius) return -1;
+            if (Math.max(a.radius, a.no_rab_obl_Radius) < Math.max(b.radius, b.no_rab_obl_Radius)) return -1;
             return 1;
         });
         for (let i = 0; i < sortedChartData.length; i++) {
             var kfe = Math.max(sortedChartData[i].maxKFE, sortedChartData[i].no_rab_obl_max_KFE);
             
             data.datasets[0].data.push(kfe);
-            data.labels.push(sortedChartData[i].radius);
+            data.labels.push(Math.max(sortedChartData[i].radius, sortedChartData[i].no_rab_obl_Radius));
 
             if (this.chartdata[i].dostovirn_D1 > sortedChartData[i].no_rab_pomylka_betta)
                 data.datasets[1].data.push(kfe);

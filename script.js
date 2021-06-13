@@ -260,7 +260,7 @@ var app = new Vue({
                             c.height = h;
                             var ctx = c.getContext("2d");
                             ctx.drawImage(this, 0, 0, w, h);
-                            app.setupOverlay(w, h);
+                            app.setupOverlay('map-container', 'source', w, h, app.addItem);
                             initExamCanvas();
                             app.sourceImageSelected = true;
                         }
@@ -285,13 +285,13 @@ var app = new Vue({
             resetExam()
         },
         //вибір зображення для класу розпізнавання (setup)
-        setupOverlay: function (width, height) {
+        setupOverlay: function (parentId, sourceCanvasId, width, height, imageCaptured) {
             //Canvas
             const canvas = document.createElement('canvas');
-            canvas.setAttribute("id", "overlay");
+            canvas.setAttribute("class", "overlay");
             canvas.setAttribute("width", width);
             canvas.setAttribute("height", height);
-            document.getElementById('map-container').appendChild(canvas);
+            document.getElementById(parentId).appendChild(canvas);
             const ctx = canvas.getContext('2d');
             //Variables
             let last_mousex = -1;
@@ -299,28 +299,11 @@ var app = new Vue({
             let mousex = -1;
             let mousey = -1;
 
-            //Mousedowjn
-            canvas.onmousedown = (ev) => {
-                let canvasx = ev.target.offsetLeft;
-                let canvasy = ev.target.offsetTop;
-
-                var clientX = ev.clientX;
-                var clientY = ev.clientY;
-
-                last_mousex = parseInt(clientX - canvasx);
-                last_mousey = parseInt(clientY - canvasy);
-                console.log({
-                    last_mousex,
-                    last_mousey
-                });
-                mousedown = true;
-            };
-
             //Mouseup
             canvas.onmouseup = (ev) => {
 
                 var size = app.frameSize;
-                var sourceCanvas = document.getElementById('source');
+                var sourceCanvas = document.getElementById(sourceCanvasId);
                 var sourceContext = sourceCanvas.getContext("2d");
 
                 let canvasx = ev.target.offsetLeft;
@@ -330,57 +313,56 @@ var app = new Vue({
                 mousex = parseInt(clientX - canvasx);
                 mousey = parseInt(clientY - canvasy);
 
-                var sourceCanvas = document.getElementById('source');
-                var sourceContext = sourceCanvas.getContext("2d");
                 var sourceImageData = sourceContext.getImageData(mousex - size / 2, mousey - size / 2, size, size);
-
-                var div = document.createElement("div");
-                div.setAttribute("id", "training_class_" + this.items.length)
-                var c = document.createElement("canvas");
-                c.className = "training";
-                c.width = app.frameSize;
-                c.height = app.frameSize;
-
-                var context = c.getContext("2d");
-                context.putImageData(sourceImageData, 0, 0);
-                document.getElementById('training-set').appendChild(c);
-                div.appendChild(c);
-
-                c = document.createElement("canvas");
-                c.className = "training_bin";
-                c.setAttribute("id", "bin_image_" + this.items.length)
-                c.width = app.frameSize;
-                c.height = app.frameSize;
-
-                var context = c.getContext("2d");
-                context.putImageData(sourceImageData, 0, 0);
-                div.appendChild(c);
-
-                document.getElementById('training-set').appendChild(div);
-
-                var preview = document.createElement("canvas");
-                preview.className = "preview";
-                preview.width = app.frameSize;
-                preview.height = app.frameSize;
-                preview.onclick = (e) => download(e);
-
-                var previewContext = preview.getContext("2d");
-                previewContext.putImageData(sourceImageData, 0, 0);
-                document.getElementById('preview').appendChild(preview);
-                var i = new item();
-                i.index = this.items.length;
-                app.items.push(i);
+                imageCaptured(sourceImageData);
             }
 
-            //Mousemove
-            canvas.onmousemove = draw_box;
+            canvas.onmousemove = (e) => draw_box(e, canvas, ctx);
+        },
+        addItem: function (sourceImageData) {
+            var div = document.createElement("div");
+            div.setAttribute("id", "training_class_" + this.items.length)
+            var c = document.createElement("canvas");
+            c.className = "training";
+            c.width = app.frameSize;
+            c.height = app.frameSize;
 
+            var context = c.getContext("2d");
+            context.putImageData(sourceImageData, 0, 0);
+            document.getElementById('training-set').appendChild(c);
+            div.appendChild(c);
+
+            c = document.createElement("canvas");
+            c.className = "training_bin";
+            c.setAttribute("id", "bin_image_" + this.items.length)
+            c.width = app.frameSize;
+            c.height = app.frameSize;
+
+            var context = c.getContext("2d");
+            context.putImageData(sourceImageData, 0, 0);
+            div.appendChild(c);
+
+            document.getElementById('training-set').appendChild(div);
+
+            var preview = document.createElement("canvas");
+            preview.className = "preview";
+            preview.width = app.frameSize;
+            preview.height = app.frameSize;
+            preview.onclick = (e) => download(e);
+
+            var previewContext = preview.getContext("2d");
+            previewContext.putImageData(sourceImageData, 0, 0);
+            document.getElementById('preview').appendChild(preview);
+            var i = new item();
+            i.index = this.items.length;
+            app.items.push(i);
         }
     }
 })
 
-function draw_box(ev) {
 
+
+function draw_box(ev, canvas, ctx) {
     let canvasx = ev.target.offsetLeft;
     let canvasy = ev.target.offsetTop;
     let clientX = ev.pageX;
@@ -490,9 +472,36 @@ function fullExam(items, method) {
 
 }
 
+function cropAreaForExam(sourceImageData) {
+    if (!app.trainingComlete) return
+
+    var exItem = new item();
+    exItem.buildMatrix(sourceImageData, app.method);
+    exItem.calculateCenter(+app.optimalDelta);
+    exItem.buildBinaryMatrix();
+    var className = "unknown";
+    var result = ExamArea(exItem, app.items);
+    if (result != -1) className = result.name;
+    var label = document.createElement('div');
+    label.innerText=className;
+    var div = document.createElement('div');
+    div.setAttribute("class","exam_frame_result col-1");
+    var c = document.createElement("canvas");
+    c.className = "exam_frame";
+    c.width = app.frameSize;
+    c.height = app.frameSize;
+    var context = c.getContext("2d");
+    context.putImageData(sourceImageData, 0, 0);
+    div.appendChild(c);
+    div.appendChild(label);
+    document.getElementById('exam_frames').appendChild(div);
+
+
+}
+
 function resetExam() {
-    document.getElementById("ExamCanvas").outerHTML = "";
-    document.getElementById("ExamBinaryCanvas").outerHTML = "";
+    document.getElementById("exam_image_container").innerHTML = "";
+    document.getElementById("exam_frames").innerHTML = "";
     initExamCanvas();
 }
 
@@ -501,14 +510,17 @@ function initExamCanvas() {
     var sourceCanvas = document.getElementById('source');
     var sourceImageData = sourceCanvas.getContext("2d").getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
 
+    var w = sourceCanvas.width;
+    var h = sourceCanvas.height;
     var examCanvas = document.createElement('canvas');
     examCanvas.setAttribute("id", "ExamCanvas");
-    examCanvas.width = sourceCanvas.width;
-    examCanvas.height = sourceCanvas.height;
+    examCanvas.width = w;
+    examCanvas.height = h;
     var examCtx = examCanvas.getContext('2d');
     examCtx.putImageData(sourceImageData, 0, 0);
-    document.getElementById('exam').appendChild(examCanvas);
+    document.getElementById('exam_image_container').appendChild(examCanvas);
 
+    app.setupOverlay('exam_image_container', 'ExamCanvas', w, h, cropAreaForExam);
 
 
     var examBinaryCanvas = document.createElement('canvas');
@@ -517,7 +529,7 @@ function initExamCanvas() {
     examBinaryCanvas.height = sourceCanvas.height;
     var examCtx = examBinaryCanvas.getContext('2d');
     examCtx.putImageData(sourceImageData, 0, 0);
-    document.getElementById('exam').appendChild(examBinaryCanvas);
+    document.getElementById('exam_image_container').appendChild(examBinaryCanvas);
 }
 
 //підсвітка ділянки зображення
